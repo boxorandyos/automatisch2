@@ -159,10 +159,6 @@ describe('App model', () => {
       });
     });
 
-    describe('license filtering with private apps', () => {
-
-    });
-
     describe('sorting behavior', () => {
       it('should return apps in alphabetical order', async () => {
         const mockReaddirSync = vi.spyOn(fs, 'readdirSync');
