@@ -1,4 +1,5 @@
 import * as React from 'react';
+import PropTypes from 'prop-types';
 import {
   Link,
   Navigate,
@@ -50,7 +51,7 @@ function AgentSettings({ agentId, agent }) {
     try {
       await updateAgent({ description, instructions });
       enqueueSnackbar(formatMessage('agent.updated'), { variant: 'success' });
-    } catch (error) {
+    } catch {
       enqueueSnackbar(formatMessage('agent.updateError'), { variant: 'error' });
     }
   };
@@ -89,7 +90,13 @@ function AgentSettings({ agentId, agent }) {
   );
 }
 
+AgentSettings.propTypes = {
+  agentId: PropTypes.string.isRequired,
+  agent: PropTypes.object.isRequired,
+};
+
 export default function Agent() {
+
   const theme = useTheme();
   const matchSmallScreens = useMediaQuery(theme.breakpoints.down('md'));
   const formatMessage = useFormatMessage();
@@ -119,7 +126,7 @@ export default function Agent() {
       enqueueSnackbar(formatMessage('agent.nameUpdated'), {
         variant: 'success',
       });
-    } catch (error) {
+    } catch {
       enqueueSnackbar(formatMessage('agent.nameUpdateError'), {
         variant: 'error',
       });
@@ -208,3 +215,7 @@ function AgentExecutionDetailWrapper({ agentId }) {
   const { executionId } = useParams();
   return <AgentExecutionDetail agentId={agentId} executionId={executionId} />;
 }
+
+AgentExecutionDetailWrapper.propTypes = {
+  agentId: PropTypes.string.isRequired,
+};

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import PropTypes from 'prop-types';
 import {
   Alert,
   Box,
@@ -89,7 +90,14 @@ function FormField({ field, value, onChange }) {
   );
 }
 
+FormField.propTypes = {
+  field: PropTypes.object.isRequired,
+  value: PropTypes.any,
+  onChange: PropTypes.func.isRequired,
+};
+
 export default function FormFlow() {
+
   const formatMessage = useFormatMessage();
   const { flowId } = useParams();
   const { data, isLoading, isError } = useFlowForm(flowId);

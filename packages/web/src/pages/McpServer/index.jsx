@@ -61,7 +61,7 @@ export default function McpServer() {
       enqueueSnackbar(formatMessage('mcpServer.nameUpdated'), {
         variant: 'success',
       });
-    } catch (error) {
+    } catch {
       enqueueSnackbar(formatMessage('mcpServer.nameUpdateError'), {
         variant: 'error',
       });

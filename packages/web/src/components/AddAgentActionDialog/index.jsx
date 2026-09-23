@@ -34,7 +34,7 @@ export default function AddAgentActionDialog({ agentId }) {
   const [selectedActions, setSelectedActions] = React.useState([]);
   const [connectionId, setConnectionId] = React.useState('');
 
-  const { data: appsData, mutate, isPending: isAppsLoading } = useLazyApps({
+  const { data: appsData, mutate } = useLazyApps({
     appName,
   });
   const apps = appsData?.data || [];

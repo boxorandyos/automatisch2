@@ -33,7 +33,7 @@ export default function AgentChat({ agentId }) {
         response?.data?.message ||
         JSON.stringify(response?.data || response);
       setMessages((prev) => [...prev, { role: 'agent', text: output }]);
-    } catch (error) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         { role: 'agent', text: formatMessage('agent.chat.error') },

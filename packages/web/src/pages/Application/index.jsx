@@ -79,12 +79,12 @@ export default function Application() {
   const goToApplicationPage = () => navigate('connections');
 
   const handleAddConnection = React.useCallback(() => {
-    if (oauthClients.length) {
+    if (appConfig?.useOnlyPredefinedAuthClients && oauthClients.length) {
       setOauthDialogOpen(true);
       return;
     }
     navigate(URLS.APP_ADD_CONNECTION(appKey));
-  }, [appKey, navigate, oauthClients.length]);
+  }, [appConfig?.useOnlyPredefinedAuthClients, appKey, navigate, oauthClients.length]);
 
   const handleOAuthClientClick = React.useCallback(
     (client) => {
@@ -153,16 +153,17 @@ export default function Application() {
                           disabled={!allowed}
                           data-test="add-connection-button"
                           onClick={handleAddConnection}
-                          {...(!oauthClients.length
+                          {...(!(
+                            appConfig?.useOnlyPredefinedAuthClients &&
+                            oauthClients.length
+                          )
                             ? {
                                 component: Link,
                                 to: URLS.APP_ADD_CONNECTION(appKey),
                               }
                             : {})}
                         >
-                          {oauthClients.length
-                            ? formatMessage('app.addConnectionWithOAuthClient')
-                            : formatMessage('app.addConnection')}
+                          {formatMessage('app.addConnection')}
                         </ConditionalIconButton>
                       )}
                     </Can>

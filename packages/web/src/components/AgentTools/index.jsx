@@ -19,11 +19,9 @@ import * as URLS from 'config/urls';
 import useAgentTools from 'hooks/useAgentTools';
 import useDeleteAgentTool from 'hooks/useDeleteAgentTool';
 import useFormatMessage from 'hooks/useFormatMessage';
-import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 
 export default function AgentTools({ agentId }) {
   const formatMessage = useFormatMessage();
-  const enqueueSnackbar = useEnqueueSnackbar();
   const { data, isLoading } = useAgentTools(agentId);
   const { mutateAsync: deleteTool } = useDeleteAgentTool(agentId);
   const tools = data?.data || [];

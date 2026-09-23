@@ -3,12 +3,11 @@ import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import PropTypes from 'prop-types';
 import * as React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import Form from 'components/Form';
 import Switch from 'components/Switch';
 import TextField from 'components/TextField';
-import * as URLS from 'config/urls';
 import useAdminOAuthClient from 'hooks/useAdminOAuthClient';
 import useAdminUpdateOAuthClient from 'hooks/useAdminUpdateOAuthClient';
 import useAppAuth from 'hooks/useAppAuth';
@@ -16,7 +15,6 @@ import useFormatMessage from 'hooks/useFormatMessage';
 
 export default function AdminUpdateOAuthClient({ appKey }) {
   const formatMessage = useFormatMessage();
-  const navigate = useNavigate();
   const { oauthClientId } = useParams();
   const { data, isLoading } = useAdminOAuthClient(appKey, oauthClientId);
   const client = data?.data;

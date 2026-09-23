@@ -1,7 +1,6 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Alert,
   Box,
   Button,
   CircularProgress,
@@ -55,7 +54,7 @@ export default function McpServerConnect({ mcpServerId }) {
       enqueueSnackbar(formatMessage('mcpServerConnect.tokenRotateSuccess'), {
         variant: 'success',
       });
-    } catch (error) {
+    } catch {
       enqueueSnackbar(formatMessage('mcpServerConnect.rotateTokenError'), {
         variant: 'error',
       });

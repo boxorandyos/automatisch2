@@ -1,4 +1,5 @@
 import * as React from 'react';
+import PropTypes from 'prop-types';
 import {
   Box,
   CircularProgress,
@@ -7,9 +8,7 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
-  Typography,
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -50,7 +49,14 @@ function TemplateContextMenu({ templateId, anchorEl, onClose }) {
   );
 }
 
+TemplateContextMenu.propTypes = {
+  templateId: PropTypes.string,
+  anchorEl: PropTypes.any,
+  onClose: PropTypes.func.isRequired,
+};
+
 export default function AdminTemplates() {
+
   const formatMessage = useFormatMessage();
   const { data, isLoading } = useAdminTemplates();
   const templates = data?.data || [];

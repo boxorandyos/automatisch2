@@ -5,35 +5,6 @@ import BillingAndUsageSettings from 'pages/BillingAndUsageSettings';
 import PlanUpgrade from 'pages/PlanUpgrade';
 import ProfileSettings from 'pages/ProfileSettings';
 import * as URLS from 'config/urls';
-import useCloud from 'hooks/useCloud';
-
-function CloudBillingAndUsageSettings() {
-  const isCloud = useCloud();
-
-  if (isCloud === false) {
-    return <Navigate to={URLS.SETTINGS_PROFILE} replace />;
-  }
-
-  return (
-    <SettingsLayout>
-      <BillingAndUsageSettings />
-    </SettingsLayout>
-  );
-}
-
-function CloudPlanUpgrade() {
-  const isCloud = useCloud();
-
-  if (isCloud === false) {
-    return <Navigate to={URLS.SETTINGS_PROFILE} replace />;
-  }
-
-  return (
-    <SettingsLayout>
-      <PlanUpgrade />
-    </SettingsLayout>
-  );
-}
 
 export default (
   <>
@@ -48,12 +19,20 @@ export default (
 
     <Route
       path={URLS.SETTINGS_BILLING_AND_USAGE}
-      element={<CloudBillingAndUsageSettings />}
+      element={
+        <SettingsLayout>
+          <BillingAndUsageSettings />
+        </SettingsLayout>
+      }
     />
 
     <Route
       path={URLS.SETTINGS_PLAN_UPGRADE}
-      element={<CloudPlanUpgrade />}
+      element={
+        <SettingsLayout>
+          <PlanUpgrade />
+        </SettingsLayout>
+      }
     />
 
     <Route
