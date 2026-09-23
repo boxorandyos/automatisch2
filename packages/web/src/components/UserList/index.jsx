@@ -13,7 +13,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import EditIcon from '@mui/icons-material/Edit';
 import TableFooter from '@mui/material/TableFooter';
-import DeleteUserButton from 'components/DeleteUserButton/index.ee';
+import DeleteUserButton from 'components/DeleteUserButton/index';
 import ListLoader from 'components/ListLoader';
 import useAdminUsers from 'hooks/useAdminUsers';
 import useFormatMessage from 'hooks/useFormatMessage';

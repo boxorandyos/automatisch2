@@ -1,13 +1,13 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Container from 'components/Container';
-import LoginForm from 'components/LoginForm';
+import ForgotPasswordForm from 'components/ForgotPasswordForm/index';
 
-export default function Login() {
+export default function ForgotPassword() {
   return (
     <Box sx={{ display: 'flex', flex: 1, alignItems: 'center' }}>
       <Container maxWidth="sm">
-        <LoginForm />
+        <ForgotPasswordForm />
       </Container>
     </Box>
   );

@@ -1,12 +1,5 @@
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import GroupIcon from '@mui/icons-material/Group';
-import GroupsIcon from '@mui/icons-material/Groups';
-import LockIcon from '@mui/icons-material/LockPerson';
-import BrushIcon from '@mui/icons-material/Brush';
-import AppsIcon from '@mui/icons-material/Apps';
-import PinIcon from '@mui/icons-material/Pin';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { Outlet } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -20,14 +13,10 @@ import Drawer from 'components/Drawer';
 import * as URLS from 'config/urls';
 import useFormatMessage from 'hooks/useFormatMessage';
 import useIsCurrentUserAdmin from 'hooks/useIsCurrentUserAdmin';
-import useIsCurrentUserEnterpriseAdmin from 'hooks/useIsCurrentUserEnterpriseAdmin';
 
 import Footer from './Footer';
 
-function createDrawerLinks({
-  isCurrentUserAdmin,
-  isCurrentUserEnterpriseAdmin,
-}) {
+function createDrawerLinks({ isCurrentUserAdmin }) {
   const items = [
     isCurrentUserAdmin
       ? {
@@ -35,62 +24,6 @@ function createDrawerLinks({
           primary: 'adminSettingsDrawer.users',
           to: URLS.USERS,
           dataTest: 'users-drawer-link',
-        }
-      : null,
-    isCurrentUserEnterpriseAdmin
-      ? {
-          Icon: GroupsIcon,
-          primary: 'adminSettingsDrawer.roles',
-          to: URLS.ROLES,
-          dataTest: 'roles-drawer-link',
-        }
-      : null,
-    isCurrentUserEnterpriseAdmin
-      ? {
-          Icon: BrushIcon,
-          primary: 'adminSettingsDrawer.userInterface',
-          to: URLS.USER_INTERFACE,
-          dataTest: 'user-interface-drawer-link',
-        }
-      : null,
-    isCurrentUserEnterpriseAdmin
-      ? {
-          Icon: LockIcon,
-          primary: 'adminSettingsDrawer.authentication',
-          to: URLS.AUTHENTICATION,
-          dataTest: 'authentication-drawer-link',
-        }
-      : null,
-    isCurrentUserEnterpriseAdmin
-      ? {
-          Icon: SmartToyIcon,
-          primary: 'adminSettingsDrawer.aiConfig',
-          to: URLS.AI_CONFIG,
-          dataTest: 'ai-config-drawer-link',
-        }
-      : null,
-    isCurrentUserEnterpriseAdmin
-      ? {
-          Icon: AppsIcon,
-          primary: 'adminSettingsDrawer.apps',
-          to: URLS.ADMIN_APPS,
-          dataTest: 'apps-drawer-link',
-        }
-      : null,
-    isCurrentUserEnterpriseAdmin
-      ? {
-          Icon: ContentCopyIcon,
-          primary: 'adminSettingsDrawer.templates',
-          to: URLS.ADMIN_TEMPLATES,
-          dataTest: 'templates-drawer-link',
-        }
-      : null,
-    isCurrentUserEnterpriseAdmin
-      ? {
-          Icon: PinIcon,
-          primary: 'adminSettingsDrawer.apiTokens',
-          to: URLS.ADMIN_API_TOKENS,
-          dataTest: 'api-tokens-drawer-link',
         }
       : null,
   ].filter(Boolean);
@@ -102,7 +35,6 @@ function AdminSettingsLayout() {
   const theme = useTheme();
   const formatMessage = useFormatMessage();
   const isCurrentUserAdmin = useIsCurrentUserAdmin();
-  const isCurrentUserEnterpriseAdmin = useIsCurrentUserEnterpriseAdmin();
   const matchSmallScreens = useMediaQuery(theme.breakpoints.down('lg'));
   const [isDrawerOpen, setDrawerOpen] = React.useState(!matchSmallScreens);
   const openDrawer = () => setDrawerOpen(true);
@@ -110,7 +42,6 @@ function AdminSettingsLayout() {
 
   const drawerLinks = createDrawerLinks({
     isCurrentUserAdmin: isCurrentUserAdmin,
-    isCurrentUserEnterpriseAdmin: isCurrentUserEnterpriseAdmin,
   });
 
   const drawerBottomLinks = [
