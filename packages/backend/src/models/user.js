@@ -14,10 +14,17 @@ import Config from '@/models/config.js';
 import Execution from '@/models/execution.js';
 import ExecutionStep from '@/models/execution-step.js';
 import Flow from '@/models/flow.js';
+import Identity from '@/models/identity.js';
 import Permission from '@/models/permission.js';
 import Role from '@/models/role.js';
+import Form from '@/models/form.js';
 import Step from '@/models/step.js';
+import Subscription from '@/models/subscription.js';
 import Folder from '@/models/folder.js';
+import UsageData from '@/models/usage-data.js';
+import Template from '@/models/template.js';
+import McpServer from '@/models/mcp-server.js';
+import Agent from '@/models/agent.js';
 import NotAuthorizedError from '@/errors/not-authorized.js';
 
 import deleteUserQueue from '@/queues/delete-user.js';
@@ -112,6 +119,44 @@ class User extends Base {
         to: 'executions.flow_id',
       },
     },
+    usageData: {
+      relation: Base.HasManyRelation,
+      modelClass: UsageData,
+      join: {
+        from: 'usage_data.user_id',
+        to: 'users.id',
+      },
+    },
+    currentUsageData: {
+      relation: Base.HasOneRelation,
+      modelClass: UsageData,
+      join: {
+        from: 'usage_data.user_id',
+        to: 'users.id',
+      },
+      filter(builder) {
+        builder.orderBy('created_at', 'desc').limit(1).first();
+      },
+    },
+    subscriptions: {
+      relation: Base.HasManyRelation,
+      modelClass: Subscription,
+      join: {
+        from: 'subscriptions.user_id',
+        to: 'users.id',
+      },
+    },
+    currentSubscription: {
+      relation: Base.HasOneRelation,
+      modelClass: Subscription,
+      join: {
+        from: 'subscriptions.user_id',
+        to: 'users.id',
+      },
+      filter(builder) {
+        builder.orderBy('created_at', 'desc').limit(1).first();
+      },
+    },
     role: {
       relation: Base.HasOneRelation,
       modelClass: Role,
@@ -128,12 +173,44 @@ class User extends Base {
         to: 'permissions.role_id',
       },
     },
+    identities: {
+      relation: Base.HasManyRelation,
+      modelClass: Identity,
+      join: {
+        from: 'identities.user_id',
+        to: 'users.id',
+      },
+    },
     folders: {
       relation: Base.HasManyRelation,
       modelClass: Folder,
       join: {
         from: 'users.id',
         to: 'folders.user_id',
+      },
+    },
+    forms: {
+      relation: Base.HasManyRelation,
+      modelClass: Form,
+      join: {
+        from: 'users.id',
+        to: 'forms.user_id',
+      },
+    },
+    mcpServers: {
+      relation: Base.HasManyRelation,
+      modelClass: McpServer,
+      join: {
+        from: 'users.id',
+        to: 'mcp_servers.user_id',
+      },
+    },
+    agents: {
+      relation: Base.HasManyRelation,
+      modelClass: Agent,
+      join: {
+        from: 'users.id',
+        to: 'agents.user_id',
       },
     },
   });
@@ -291,6 +368,12 @@ class User extends Base {
     await this.$relatedQuery('steps').delete();
     await Flow.query().whereIn('id', flowIds).delete();
     await this.$relatedQuery('connections').delete();
+    await this.$relatedQuery('identities').delete();
+
+    if (appConfig.isCloud) {
+      await this.$relatedQuery('subscriptions').delete();
+      await this.$relatedQuery('usageData').delete();
+    }
   }
 
   async sendResetPasswordEmail() {
@@ -593,6 +676,16 @@ class User extends Base {
     });
 
     await flow.createInitialSteps();
+
+    return flow;
+  }
+
+  async createFlowFromTemplate(templateId) {
+    const template = await Template.query()
+      .findById(templateId)
+      .throwIfNotFound();
+
+    const flow = await Flow.import(this, template.flowData);
 
     return flow;
   }
