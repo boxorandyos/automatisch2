@@ -93,6 +93,6 @@ exports[`App model > list > should list all applications 1`] = `
   "xero",
   "you-need-a-budget",
   "youtube",
-  "zendesk",
+  "zendesk"
 ]
 `;

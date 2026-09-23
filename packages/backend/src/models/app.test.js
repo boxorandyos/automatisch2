@@ -31,9 +31,9 @@ describe('App model', () => {
       const appList = await App.list();
 
       expect(appList).toMatchSnapshot();
-      expect(appList).not.toContain('forms');
-      expect(appList).not.toContain('mcp');
-      expect(appList).not.toContain('agents');
+      expect(appList).toContain('forms');
+      expect(appList).toContain('mcp');
+      expect(appList).toContain('agents');
     });
 
     describe('directory filtering', () => {
