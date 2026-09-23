@@ -11,6 +11,9 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import PropTypes from 'prop-types';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import SecurityIcon from '@mui/icons-material/Security';
+import DynamicFormIcon from '@mui/icons-material/DynamicForm';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import DnsIcon from '@mui/icons-material/Dns';
 
 import * as URLS from 'config/urls';
 import useFormatMessage from 'hooks/useFormatMessage';
@@ -28,26 +31,56 @@ const additionalDrawerLinkIcons = {
   ArrowBackIosNew: ArrowBackIosNewIcon,
 };
 
-const drawerLinks = [
-  {
-    Icon: SwapCallsIcon,
-    primary: 'drawer.flows',
-    to: URLS.FLOWS,
-    dataTest: 'flows-page-drawer-link',
-  },
-  {
-    Icon: AppsIcon,
-    primary: 'drawer.apps',
-    to: URLS.APPS,
-    dataTest: 'apps-page-drawer-link',
-  },
-  {
-    Icon: HistoryIcon,
-    primary: 'drawer.executions',
-    to: URLS.EXECUTIONS,
-    dataTest: 'executions-page-drawer-link',
-  },
-];
+function createDrawerLinks({ isEnterprise }) {
+  const links = [
+    {
+      Icon: SwapCallsIcon,
+      primary: 'drawer.flows',
+      to: URLS.FLOWS,
+      dataTest: 'flows-page-drawer-link',
+    },
+  ];
+
+  if (isEnterprise) {
+    links.push(
+      {
+        Icon: DynamicFormIcon,
+        primary: 'drawer.forms',
+        to: URLS.FORMS,
+        dataTest: 'forms-page-drawer-link',
+      },
+      {
+        Icon: SmartToyIcon,
+        primary: 'drawer.agents',
+        to: URLS.AGENTS,
+        dataTest: 'agents-page-drawer-link',
+      },
+      {
+        Icon: DnsIcon,
+        primary: 'drawer.mcpServers',
+        to: URLS.MCP_SERVERS,
+        dataTest: 'mcp-servers-page-drawer-link',
+      },
+    );
+  }
+
+  links.push(
+    {
+      Icon: AppsIcon,
+      primary: 'drawer.apps',
+      to: URLS.APPS,
+      dataTest: 'apps-page-drawer-link',
+    },
+    {
+      Icon: HistoryIcon,
+      primary: 'drawer.executions',
+      to: URLS.EXECUTIONS,
+      dataTest: 'executions-page-drawer-link',
+    },
+  );
+
+  return links;
+}
 
 const generateDrawerBottomLinks = ({
   disableNotificationsPage,
@@ -96,6 +129,7 @@ function PublicLayout({ children }) {
 
   const automatischInfo = automatischInfoData?.data;
   const config = configData?.data;
+  const isEnterprise = automatischInfo?.isEnterprise;
 
   const theme = useTheme();
   const formatMessage = useFormatMessage();
@@ -103,6 +137,11 @@ function PublicLayout({ children }) {
   const [isDrawerOpen, setDrawerOpen] = React.useState(!matchSmallScreens);
   const openDrawer = () => setDrawerOpen(true);
   const closeDrawer = () => setDrawerOpen(false);
+
+  const drawerLinks = React.useMemo(
+    () => createDrawerLinks({ isEnterprise }),
+    [isEnterprise],
+  );
 
   const bottomLinks = React.useMemo(() => {
     return generateDrawerBottomLinks({

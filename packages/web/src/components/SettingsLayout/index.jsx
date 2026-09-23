@@ -6,29 +6,42 @@ import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import PaymentIcon from '@mui/icons-material/Payment';
 import * as URLS from 'config/urls';
 import useFormatMessage from 'hooks/useFormatMessage';
+import useCloud from 'hooks/useCloud';
 import AppBar from 'components/AppBar';
 import Drawer from 'components/Drawer';
 
-function createDrawerLinks() {
-  return [
+function createDrawerLinks({ isCloud }) {
+  const links = [
     {
       Icon: AccountCircleIcon,
       primary: 'settingsDrawer.myProfile',
       to: URLS.SETTINGS_PROFILE,
     },
   ];
+
+  if (isCloud) {
+    links.push({
+      Icon: PaymentIcon,
+      primary: 'settingsDrawer.billingAndUsage',
+      to: URLS.SETTINGS_BILLING_AND_USAGE,
+    });
+  }
+
+  return links;
 }
 
 function SettingsLayout({ children }) {
   const theme = useTheme();
   const formatMessage = useFormatMessage();
+  const isCloud = useCloud();
   const matchSmallScreens = useMediaQuery(theme.breakpoints.down('lg'));
   const [isDrawerOpen, setDrawerOpen] = React.useState(!matchSmallScreens);
   const openDrawer = () => setDrawerOpen(true);
   const closeDrawer = () => setDrawerOpen(false);
-  const drawerLinks = createDrawerLinks();
+  const drawerLinks = createDrawerLinks({ isCloud });
   const drawerBottomLinks = [
     {
       Icon: ArrowBackIosNewIcon,

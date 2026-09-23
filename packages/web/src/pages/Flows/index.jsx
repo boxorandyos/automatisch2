@@ -22,6 +22,7 @@ import ImportFlowDialog from 'components/ImportFlowDialog';
 import NoResultFound from 'components/NoResultFound';
 import PageTitle from 'components/PageTitle';
 import SearchInput from 'components/SearchInput';
+import TemplatesDialog from 'components/TemplatesDialog';
 import * as URLS from 'config/urls';
 import objectifyUrlSearchParams from 'helpers/objectifyUrlSearchParams';
 import useCurrentUserAbility from 'hooks/useCurrentUserAbility';
@@ -197,6 +198,7 @@ export default function Flows() {
 
       <Routes>
         <Route path="/import" element={<ImportFlowDialog />} />
+        <Route path="/templates" element={<TemplatesDialog />} />
       </Routes>
     </>
   );

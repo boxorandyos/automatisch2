@@ -1,5 +1,12 @@
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import GroupIcon from '@mui/icons-material/Group';
+import GroupsIcon from '@mui/icons-material/Groups';
+import LockIcon from '@mui/icons-material/Lock';
+import BrushIcon from '@mui/icons-material/Brush';
+import AppsIcon from '@mui/icons-material/Apps';
+import ArticleIcon from '@mui/icons-material/Article';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 import { Outlet } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -24,6 +31,62 @@ function createDrawerLinks({ isCurrentUserAdmin }) {
           primary: 'adminSettingsDrawer.users',
           to: URLS.USERS,
           dataTest: 'users-drawer-link',
+        }
+      : null,
+    isCurrentUserAdmin
+      ? {
+          Icon: GroupsIcon,
+          primary: 'adminSettingsDrawer.roles',
+          to: URLS.ROLES,
+          dataTest: 'roles-drawer-link',
+        }
+      : null,
+    isCurrentUserAdmin
+      ? {
+          Icon: LockIcon,
+          primary: 'adminSettingsDrawer.authentication',
+          to: URLS.AUTHENTICATION,
+          dataTest: 'authentication-drawer-link',
+        }
+      : null,
+    isCurrentUserAdmin
+      ? {
+          Icon: BrushIcon,
+          primary: 'adminSettingsDrawer.userInterface',
+          to: URLS.USER_INTERFACE,
+          dataTest: 'user-interface-drawer-link',
+        }
+      : null,
+    isCurrentUserAdmin
+      ? {
+          Icon: PsychologyIcon,
+          primary: 'adminSettingsDrawer.aiConfig',
+          to: URLS.AI_CONFIG,
+          dataTest: 'ai-config-drawer-link',
+        }
+      : null,
+    isCurrentUserAdmin
+      ? {
+          Icon: AppsIcon,
+          primary: 'adminSettingsDrawer.apps',
+          to: URLS.ADMIN_APPS,
+          dataTest: 'admin-apps-drawer-link',
+        }
+      : null,
+    isCurrentUserAdmin
+      ? {
+          Icon: ArticleIcon,
+          primary: 'adminSettingsDrawer.templates',
+          to: URLS.ADMIN_TEMPLATES,
+          dataTest: 'templates-drawer-link',
+        }
+      : null,
+    isCurrentUserAdmin
+      ? {
+          Icon: VpnKeyIcon,
+          primary: 'adminSettingsDrawer.apiTokens',
+          to: URLS.ADMIN_API_TOKENS,
+          dataTest: 'api-tokens-drawer-link',
         }
       : null,
   ].filter(Boolean);

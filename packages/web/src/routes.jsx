@@ -10,21 +10,30 @@ import * as URLS from 'config/urls';
 import AcceptInvitation from 'pages/AcceptInvitation';
 import AdminSettingsLayout from 'components/AdminSettingsLayout';
 import adminSettingsRoutes from './adminSettingsRoutes';
+import Agent from 'pages/Agent';
+import Agents from 'pages/Agents';
 import Application from 'pages/Application';
 import Applications from 'pages/Applications';
 import EditorRoutes from 'pages/Editor/routes';
 import Execution from 'pages/Execution';
 import Executions from 'pages/Executions';
 import Flows from 'pages/Flows';
+import FormFlow from 'pages/FormFlow';
+import Forms from 'pages/Forms';
+import CreateForm from 'pages/CreateForm';
+import EditForm from 'pages/EditForm';
 import ForgotPassword from 'pages/ForgotPassword/index';
 import Installation from 'pages/Installation';
 import Layout from 'components/Layout';
 import Login from 'pages/Login';
 import LoginCallback from 'pages/LoginCallback';
+import McpServer from 'pages/McpServer';
+import McpServers from 'pages/McpServers';
 import NoResultFound from 'components/NotFound';
 import Notifications from 'pages/Notifications';
 import PublicLayout from 'components/PublicLayout';
 import ResetPassword from 'pages/ResetPassword/index';
+import SignUp from 'pages/SignUp';
 import settingsRoutes from './settingsRoutes';
 import useAuthentication from 'hooks/useAuthentication';
 import useAutomatischConfig from 'hooks/useAutomatischConfig';
@@ -37,6 +46,7 @@ function Routes() {
   const { data: configData } = useAutomatischConfig();
 
   const config = configData?.data;
+  const isEnterprise = automatischInfo?.data?.isEnterprise;
 
   const installed = isSuccess
     ? automatischInfo.data.installationCompleted
@@ -95,6 +105,73 @@ function Routes() {
         }
       />
 
+      {(isEnterprise || isEnterprise === undefined) && (
+        <>
+          <Route
+            path={URLS.FORMS}
+            element={
+              <Layout>
+                <Forms />
+              </Layout>
+            }
+          />
+
+          <Route
+            path={URLS.CREATE_FORM}
+            element={
+              <Layout>
+                <CreateForm />
+              </Layout>
+            }
+          />
+
+          <Route
+            path={URLS.FORM_PATTERN}
+            element={
+              <Layout>
+                <EditForm />
+              </Layout>
+            }
+          />
+
+          <Route
+            path={URLS.AGENTS}
+            element={
+              <Layout>
+                <Agents />
+              </Layout>
+            }
+          />
+
+          <Route
+            path={`${URLS.AGENT_PATTERN}/*`}
+            element={
+              <Layout>
+                <Agent />
+              </Layout>
+            }
+          />
+
+          <Route
+            path={URLS.MCP_SERVERS}
+            element={
+              <Layout>
+                <McpServers />
+              </Layout>
+            }
+          />
+
+          <Route
+            path={`${URLS.MCP_SERVER_PATTERN}/*`}
+            element={
+              <Layout>
+                <McpServer />
+              </Layout>
+            }
+          />
+        </>
+      )}
+
       <Route path={`${URLS.EDITOR}/*`} element={<EditorRoutes />} />
 
       <Route
@@ -102,6 +179,24 @@ function Routes() {
         element={
           <PublicLayout>
             <Login />
+          </PublicLayout>
+        }
+      />
+
+      <Route
+        path={URLS.SIGNUP}
+        element={
+          <PublicLayout>
+            <SignUp />
+          </PublicLayout>
+        }
+      />
+
+      <Route
+        path={URLS.PUBLIC_FORM_PATTERN}
+        element={
+          <PublicLayout>
+            <FormFlow />
           </PublicLayout>
         }
       />

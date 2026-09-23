@@ -1,5 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import Button from '@mui/material/Button';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -9,6 +10,7 @@ import { Link, useLocation } from 'react-router-dom';
 import SplitButton from 'components/SplitButton';
 
 import * as URLS from 'config/urls';
+import useAutomatischConfig from 'hooks/useAutomatischConfig';
 import useCurrentUserAbility from 'hooks/useCurrentUserAbility';
 import useFormatMessage from 'hooks/useFormatMessage';
 
@@ -19,6 +21,8 @@ export default function FlowsButtons() {
   const theme = useTheme();
   const matchSmallScreens = useMediaQuery(theme.breakpoints.down('md'));
   const canCreateFlow = currentUserAbility.can('manage', 'Flow');
+  const { data: configData } = useAutomatischConfig();
+  const enableTemplates = configData?.data?.enableTemplates;
 
   const createFlowButtonData = {
     label: formatMessage('flows.createFlow'),
@@ -26,6 +30,14 @@ export default function FlowsButtons() {
     'data-test': 'create-flow-button',
     to: URLS.CREATE_FLOW,
     startIcon: <AddIcon />,
+  };
+
+  const createFromTemplateButtonData = {
+    label: formatMessage('flows.createFlowFromTemplate'),
+    key: 'createFlowFromTemplate',
+    'data-test': 'create-flow-from-template-button',
+    to: URLS.VIEW_TEMPLATES,
+    startIcon: <LibraryBooksIcon />,
   };
 
   const importFlowButtonData = {
@@ -36,7 +48,11 @@ export default function FlowsButtons() {
   };
 
   if (matchSmallScreens) {
-    const connectionOptions = [createFlowButtonData, importFlowButtonData];
+    const connectionOptions = [
+      createFlowButtonData,
+      ...(enableTemplates ? [createFromTemplateButtonData] : []),
+      importFlowButtonData,
+    ];
 
     return (
       <>
@@ -60,6 +76,22 @@ export default function FlowsButtons() {
       >
         {formatMessage('flows.importFlow')}
       </Button>
+
+      {enableTemplates && (
+        <Button
+          type="submit"
+          variant="outlined"
+          color="info"
+          size="large"
+          component={Link}
+          disabled={!canCreateFlow}
+          startIcon={<LibraryBooksIcon />}
+          to={URLS.VIEW_TEMPLATES}
+          data-test="create-flow-from-template-button"
+        >
+          {formatMessage('flows.createFlowFromTemplate')}
+        </Button>
+      )}
 
       <Button
         type="submit"

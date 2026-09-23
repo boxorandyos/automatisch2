@@ -26,8 +26,11 @@ import AppFlows from 'components/AppFlows';
 import AddAppConnection from 'components/AddAppConnection';
 import AppIcon from 'components/AppIcon';
 import Container from 'components/Container';
+import OAuthClientsDialog from 'components/OAuthClientsDialog';
 import PageTitle from 'components/PageTitle';
 import useApp from 'hooks/useApp';
+import useAppConfig from 'hooks/useAppConfig';
+import useOAuthClients from 'hooks/useOAuthClients';
 import Can from 'components/Can';
 import { AppPropType } from 'propTypes/propTypes';
 
@@ -63,10 +66,33 @@ export default function Application() {
 
   const { data, loading } = useApp(appKey);
   const app = data?.data || {};
+  const { data: appConfigData } = useAppConfig(appKey);
+  const appConfig = appConfigData?.data;
+  const { data: oauthClientsData } = useOAuthClients(appKey);
+  const oauthClients = (oauthClientsData?.data || []).filter(
+    (client) => client.active,
+  );
+  const [oauthDialogOpen, setOauthDialogOpen] = React.useState(false);
 
   const currentUserAbility = useCurrentUserAbility();
 
   const goToApplicationPage = () => navigate('connections');
+
+  const handleAddConnection = React.useCallback(() => {
+    if (oauthClients.length) {
+      setOauthDialogOpen(true);
+      return;
+    }
+    navigate(URLS.APP_ADD_CONNECTION(appKey));
+  }, [appKey, navigate, oauthClients.length]);
+
+  const handleOAuthClientClick = React.useCallback(
+    (client) => {
+      setOauthDialogOpen(false);
+      navigate(URLS.APP_ADD_CONNECTION_WITH_OAUTH_CLIENT_ID(appKey, client.id));
+    },
+    [appKey, navigate],
+  );
 
   if (loading) return null;
 
@@ -122,14 +148,21 @@ export default function Application() {
                           variant="contained"
                           color="primary"
                           size="large"
-                          component={Link}
-                          to={URLS.APP_ADD_CONNECTION(appKey)}
                           fullWidth
                           icon={<AddIcon />}
                           disabled={!allowed}
                           data-test="add-connection-button"
+                          onClick={handleAddConnection}
+                          {...(!oauthClients.length
+                            ? {
+                                component: Link,
+                                to: URLS.APP_ADD_CONNECTION(appKey),
+                              }
+                            : {})}
                         >
-                          {formatMessage('app.addConnection')}
+                          {oauthClients.length
+                            ? formatMessage('app.addConnectionWithOAuthClient')
+                            : formatMessage('app.addConnection')}
                         </ConditionalIconButton>
                       )}
                     </Can>
@@ -138,6 +171,14 @@ export default function Application() {
               </Routes>
             </Grid>
           </Grid>
+
+          {oauthDialogOpen && (
+            <OAuthClientsDialog
+              appKey={appKey}
+              onClose={() => setOauthDialogOpen(false)}
+              onClientClick={handleOAuthClientClick}
+            />
+          )}
 
           <Grid container>
             <Grid item xs>
