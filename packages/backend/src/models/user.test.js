@@ -2,7 +2,6 @@ import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { DateTime, Duration } from 'luxon';
 import Crypto from 'crypto';
 import appConfig from '@/config/app.js';
-import * as licenseModule from '@/helpers/license.ee.js';
 import Base from '@/models/base.js';
 import AccessToken from '@/models/access-token.js';
 import Config from '@/models/config.js';
@@ -10,16 +9,11 @@ import Connection from '@/models/connection.js';
 import Execution from '@/models/execution.js';
 import Flow from '@/models/flow.js';
 import Folder from '@/models/folder.js';
-import Form from '@/models/form.ee.js';
-import Identity from '@/models/identity.ee.js';
-import McpServer from '@/models/mcp-server.ee.js';
 import Permission from '@/models/permission.js';
 import Role from '@/models/role.js';
 import Step from '@/models/step.js';
-import Subscription from '@/models/subscription.ee.js';
-import UsageData from '@/models/usage-data.ee.js';
 import User from '@/models/user.js';
-import deleteUserQueue from '@/queues/delete-user.ee.js';
+import deleteUserQueue from '@/queues/delete-user.js';
 import emailQueue from '@/queues/email.js';
 import {
   REMOVE_AFTER_30_DAYS_OR_150_JOBS,
@@ -33,13 +27,7 @@ import { createPermission } from '@/factories/permission.js';
 import { createFlow } from '@/factories/flow.js';
 import { createStep } from '@/factories/step.js';
 import { createExecution } from '@/factories/execution.js';
-import { createSubscription } from '@/factories/subscription.js';
-import { createUsageData } from '@/factories/usage-data.js';
 import { createFolder } from '@/factories/folder.js';
-import { createTemplate } from '@/factories/template.js';
-import Billing from '@/helpers/billing/index.ee.js';
-import Template from '@/models/template.ee.js';
-import Agent from '@/models/agent.ee.js';
 
 describe('User model', () => {
   it('tableName should return correct name', () => {
@@ -103,40 +91,6 @@ describe('User model', () => {
             to: 'executions.flow_id',
           },
         },
-        usageData: {
-          relation: Base.HasManyRelation,
-          modelClass: UsageData,
-          join: {
-            from: 'usage_data.user_id',
-            to: 'users.id',
-          },
-        },
-        currentUsageData: {
-          relation: Base.HasOneRelation,
-          modelClass: UsageData,
-          join: {
-            from: 'usage_data.user_id',
-            to: 'users.id',
-          },
-          filter: expect.any(Function),
-        },
-        subscriptions: {
-          relation: Base.HasManyRelation,
-          modelClass: Subscription,
-          join: {
-            from: 'subscriptions.user_id',
-            to: 'users.id',
-          },
-        },
-        currentSubscription: {
-          relation: Base.HasOneRelation,
-          modelClass: Subscription,
-          join: {
-            from: 'subscriptions.user_id',
-            to: 'users.id',
-          },
-          filter: expect.any(Function),
-        },
         role: {
           relation: Base.HasOneRelation,
           modelClass: Role,
@@ -153,22 +107,6 @@ describe('User model', () => {
             to: 'permissions.role_id',
           },
         },
-        identities: {
-          relation: Base.HasManyRelation,
-          modelClass: Identity,
-          join: {
-            from: 'identities.user_id',
-            to: 'users.id',
-          },
-        },
-        mcpServers: {
-          relation: Base.HasManyRelation,
-          modelClass: McpServer,
-          join: {
-            from: 'users.id',
-            to: 'mcp_servers.user_id',
-          },
-        },
         folders: {
           relation: Base.HasManyRelation,
           modelClass: Folder,
@@ -177,66 +115,12 @@ describe('User model', () => {
             to: 'folders.user_id',
           },
         },
-        forms: {
-          join: {
-            from: 'users.id',
-            to: 'forms.user_id',
-          },
-          modelClass: Form,
-          relation: Base.HasManyRelation,
-        },
-        agents: {
-          relation: Base.HasManyRelation,
-          modelClass: Agent,
-          join: {
-            from: 'users.id',
-            to: 'agents.user_id',
-          },
-        },
       };
 
       expect(relationMappings).toStrictEqual(expectedRelations);
     });
 
-    it('currentUsageData should return the current usage data', () => {
-      const relations = User.relationMappings();
 
-      const firstSpy = vi.fn();
-
-      const limitSpy = vi.fn().mockImplementation(() => ({
-        first: firstSpy,
-      }));
-
-      const orderBySpy = vi.fn().mockImplementation(() => ({
-        limit: limitSpy,
-      }));
-
-      relations.currentUsageData.filter({ orderBy: orderBySpy });
-
-      expect(orderBySpy).toHaveBeenCalledWith('created_at', 'desc');
-      expect(limitSpy).toHaveBeenCalledWith(1);
-      expect(firstSpy).toHaveBeenCalledOnce();
-    });
-
-    it('currentSubscription should return the current subscription', () => {
-      const relations = User.relationMappings();
-
-      const firstSpy = vi.fn();
-
-      const limitSpy = vi.fn().mockImplementation(() => ({
-        first: firstSpy,
-      }));
-
-      const orderBySpy = vi.fn().mockImplementation(() => ({
-        limit: limitSpy,
-      }));
-
-      relations.currentSubscription.filter({ orderBy: orderBySpy });
-
-      expect(orderBySpy).toHaveBeenCalledWith('created_at', 'desc');
-      expect(limitSpy).toHaveBeenCalledWith(1);
-      expect(firstSpy).toHaveBeenCalledOnce();
-    });
   });
 
   it('virtualAttributes should return correct attributes', () => {
@@ -737,7 +621,7 @@ describe('User model', () => {
     const jobPayload = {
       email: refetchedUser.email,
       subject: 'Reset Password',
-      template: 'reset-password-instructions.ee',
+      template: 'reset-password-instructions',
       params: {
         token: refetchedUser.resetPasswordToken,
         webAppUrl: appConfig.webAppUrl,
@@ -938,44 +822,10 @@ describe('User model', () => {
   });
 
   describe('isAllowedToRunFlows', () => {
-    it('should return true when Automatisch is self hosted', async () => {
+    it('should return true', async () => {
       const user = new User();
-
-      vi.spyOn(appConfig, 'isSelfHosted', 'get').mockReturnValue(true);
 
       expect(await user.isAllowedToRunFlows()).toBe(true);
-    });
-
-    it('should return true when the user is in trial', async () => {
-      const user = new User();
-
-      vi.spyOn(user, 'inTrial').mockResolvedValue(true);
-
-      expect(await user.isAllowedToRunFlows()).toBe(true);
-    });
-
-    it('should return true when the user has active subscription and within quota limits', async () => {
-      const user = new User();
-
-      vi.spyOn(user, 'hasActiveSubscription').mockResolvedValue(true);
-      vi.spyOn(user, 'withinLimits').mockResolvedValue(true);
-
-      expect(await user.isAllowedToRunFlows()).toBe(true);
-    });
-
-    it('should return false when the user has active subscription over quota limits', async () => {
-      const user = new User();
-
-      vi.spyOn(user, 'hasActiveSubscription').mockResolvedValue(true);
-      vi.spyOn(user, 'withinLimits').mockResolvedValue(false);
-
-      expect(await user.isAllowedToRunFlows()).toBe(false);
-    });
-
-    it('should return false otherwise', async () => {
-      const user = new User();
-
-      expect(await user.isAllowedToRunFlows()).toBe(false);
     });
   });
 
@@ -996,20 +846,6 @@ describe('User model', () => {
       expect(await user.inTrial()).toBe(false);
     });
 
-    it('should return false when the user has an active subscription', async () => {
-      const user = new User();
-      user.trialExpiryDate = '2024-12-14';
-
-      vi.spyOn(appConfig, 'isSelfHosted', 'get').mockReturnValue(false);
-
-      const hasActiveSubscriptionSpy = vi
-        .spyOn(user, 'hasActiveSubscription')
-        .mockResolvedValue(true);
-
-      expect(await user.inTrial()).toBe(false);
-      expect(hasActiveSubscriptionSpy).toHaveBeenCalledOnce();
-    });
-
     it('should return true when trial expiry date is in future', async () => {
       vi.useFakeTimers();
 
@@ -1027,7 +863,6 @@ describe('User model', () => {
       const refetchedUser = await user.$query();
 
       vi.spyOn(appConfig, 'isSelfHosted', 'get').mockReturnValue(false);
-      vi.spyOn(refetchedUser, 'hasActiveSubscription').mockResolvedValue(false);
 
       expect(await refetchedUser.inTrial()).toBe(true);
 
@@ -1046,7 +881,6 @@ describe('User model', () => {
       const refetchedUser = await user.$query();
 
       vi.spyOn(appConfig, 'isSelfHosted', 'get').mockReturnValue(false);
-      vi.spyOn(refetchedUser, 'hasActiveSubscription').mockResolvedValue(false);
 
       expect(await refetchedUser.inTrial()).toBe(false);
 
@@ -1054,128 +888,9 @@ describe('User model', () => {
     });
   });
 
-  describe('hasActiveSubscription', () => {
-    it('should return true if current subscription is valid', async () => {
-      const user = await createUser();
-      await createSubscription({ userId: user.id, status: 'active' });
 
-      expect(await user.hasActiveSubscription()).toBe(true);
-    });
 
-    it('should return false if current subscription is not valid', async () => {
-      const user = await createUser();
 
-      await createSubscription({
-        userId: user.id,
-        status: 'deleted',
-        cancellationEffectiveDate: DateTime.now().minus({ day: 1 }).toString(),
-      });
-
-      expect(await user.hasActiveSubscription()).toBe(false);
-    });
-
-    it('should return false if Automatisch is not a cloud installation', async () => {
-      const user = new User();
-
-      vi.spyOn(appConfig, 'isCloud', 'get').mockReturnValue(false);
-
-      expect(await user.hasActiveSubscription()).toBe(false);
-    });
-  });
-
-  describe('withinLimits', () => {
-    it('should return true when the consumed task count is less than the quota', async () => {
-      const user = await createUser();
-      const subscription = await createSubscription({ userId: user.id });
-
-      await createUsageData({
-        subscriptionId: subscription.id,
-        userId: user.id,
-        consumedTaskCount: 100,
-      });
-
-      expect(await user.withinLimits()).toBe(true);
-    });
-
-    it('should return true when the consumed task count is less than the quota', async () => {
-      const user = await createUser();
-      const subscription = await createSubscription({ userId: user.id });
-
-      await createUsageData({
-        subscriptionId: subscription.id,
-        userId: user.id,
-        consumedTaskCount: 10000,
-      });
-
-      expect(await user.withinLimits()).toBe(false);
-    });
-  });
-
-  describe('getPlanAndUsage', () => {
-    it('should return plan and usage', async () => {
-      const user = await createUser();
-
-      const subscription = await createSubscription({ userId: user.id });
-
-      expect(await user.getPlanAndUsage()).toStrictEqual({
-        usage: {
-          task: 0,
-        },
-        plan: {
-          id: subscription.paddlePlanId,
-          name: '10k - monthly',
-          limit: '10,000',
-        },
-      });
-    });
-
-    it('should return trial plan and usage if no subscription exists', async () => {
-      const user = await createUser();
-
-      expect(await user.getPlanAndUsage()).toStrictEqual({
-        usage: {
-          task: 0,
-        },
-        plan: {
-          id: null,
-          name: 'Free Trial',
-          limit: null,
-        },
-      });
-    });
-
-    it('should throw not found when the current usage data does not exist', async () => {
-      vi.spyOn(appConfig, 'isCloud', 'get').mockReturnValue(false);
-
-      const user = await createUser();
-
-      await expect(() => user.getPlanAndUsage()).rejects.toThrow(
-        'NotFoundError'
-      );
-    });
-  });
-
-  describe('getInvoices', () => {
-    it('should return invoices for the current subscription', async () => {
-      const user = await createUser();
-      const subscription = await createSubscription({ userId: user.id });
-
-      const getInvoicesSpy = vi
-        .spyOn(Billing.paddleClient, 'getInvoices')
-        .mockResolvedValue('dummy-invoices');
-
-      expect(await user.getInvoices()).toBe('dummy-invoices');
-      expect(getInvoicesSpy).toHaveBeenCalledWith(
-        Number(subscription.paddleSubscriptionId)
-      );
-    });
-
-    it('should return empty array without any subscriptions', async () => {
-      const user = await createUser();
-
-      expect(await user.getInvoices()).toEqual([]);
-    });
-  });
 
   describe('hasFolderAccess', () => {
     let currentUser, currentUserFolder;
@@ -1599,148 +1314,7 @@ describe('User model', () => {
     expect(user.email).toBe('user@automatisch.io');
   });
 
-  describe('createUsageData', () => {
-    it('should create usage data if Automatisch is a cloud installation', async () => {
-      vi.useFakeTimers();
 
-      vi.spyOn(appConfig, 'isCloud', 'get').mockReturnValue(true);
-
-      const user = await createUser({
-        fullName: 'Sample user',
-        email: 'user@automatisch.io',
-      });
-
-      vi.setSystemTime(DateTime.now().plus({ month: 1 }));
-
-      const usageData = await user.createUsageData();
-      const currentUsageData = await user.$relatedQuery('currentUsageData');
-
-      expect(usageData).toStrictEqual(currentUsageData);
-
-      vi.useRealTimers();
-    });
-
-    it('should not create usage data if Automatisch is not a cloud installation', async () => {
-      vi.spyOn(appConfig, 'isCloud', 'get').mockReturnValue(false);
-
-      const user = await createUser({
-        fullName: 'Sample user',
-        email: 'user@automatisch.io',
-      });
-
-      const usageData = await user.createUsageData();
-
-      expect(usageData).toBe(undefined);
-    });
-  });
-
-  describe('omitEnterprisePermissionsWithoutValidLicense', () => {
-    it('should return user as-is with valid license', async () => {
-      const userRole = await createRole({ name: 'User' });
-      const user = await createUser({
-        fullName: 'Sample user',
-        email: 'user@automatisch.io',
-        roleId: userRole.id,
-      });
-
-      const readFlowPermission = await createPermission({
-        roleId: userRole.id,
-        subject: 'Flow',
-        action: 'read',
-        conditions: [],
-      });
-
-      await createPermission({
-        roleId: userRole.id,
-        subject: 'App',
-        action: 'read',
-        conditions: [],
-      });
-
-      await createPermission({
-        roleId: userRole.id,
-        subject: 'Role',
-        action: 'read',
-        conditions: [],
-      });
-
-      await createPermission({
-        roleId: userRole.id,
-        subject: 'Config',
-        action: 'read',
-        conditions: [],
-      });
-
-      await createPermission({
-        roleId: userRole.id,
-        subject: 'SamlAuthProvider',
-        action: 'read',
-        conditions: [],
-      });
-
-      const userWithRoleAndPermissions = await user
-        .$query()
-        .withGraphFetched({ role: true, permissions: true });
-
-      expect(userWithRoleAndPermissions.permissions).toStrictEqual([
-        readFlowPermission,
-      ]);
-    });
-
-    it('should omit enterprise permissions without valid license', async () => {
-      vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(false);
-
-      const userRole = await createRole({ name: 'User' });
-      const user = await createUser({
-        fullName: 'Sample user',
-        email: 'user@automatisch.io',
-        roleId: userRole.id,
-      });
-
-      const readFlowPermission = await createPermission({
-        roleId: userRole.id,
-        subject: 'Flow',
-        action: 'read',
-        conditions: [],
-      });
-
-      await createPermission({
-        roleId: userRole.id,
-        subject: 'App',
-        action: 'read',
-        conditions: [],
-      });
-
-      await createPermission({
-        roleId: userRole.id,
-        subject: 'Role',
-        action: 'read',
-        conditions: [],
-      });
-
-      await createPermission({
-        roleId: userRole.id,
-        subject: 'Config',
-        action: 'read',
-        conditions: [],
-      });
-
-      await createPermission({
-        roleId: userRole.id,
-        subject: 'SamlAuthProvider',
-        action: 'read',
-        conditions: [],
-      });
-
-      const userWithRoleAndPermissions = await user
-        .$query()
-        .withGraphFetched({ role: true, permissions: true });
-
-      expect(userWithRoleAndPermissions.permissions).toStrictEqual([
-        readFlowPermission,
-      ]);
-    });
-  });
 
   describe('createEmptyFlow', () => {
     it('should create a flow with default name', async () => {
@@ -1764,38 +1338,6 @@ describe('User model', () => {
     });
   });
 
-  describe('createFlowFromTemplate', () => {
-    let user, template;
-
-    beforeEach(async () => {
-      user = await createUser();
-      template = await createTemplate();
-    });
-
-    it('should throw an error if template is not found', async () => {
-      const nonExistentTemplateId = Crypto.randomUUID();
-
-      await expect(
-        user.createFlowFromTemplate(nonExistentTemplateId)
-      ).rejects.toThrow('NotFoundError');
-    });
-
-    it('should call Flow.import with the correct parameters', async () => {
-      vi.spyOn(Template.query(), 'findById').mockImplementation(() => ({
-        throwIfNotFound: () => template,
-      }));
-
-      const importSpy = vi.spyOn(Flow, 'import').mockResolvedValue({
-        id: Crypto.randomUUID(),
-        name: template.flowData.name,
-        steps: [],
-      });
-
-      await user.createFlowFromTemplate(template.id);
-
-      expect(importSpy).toHaveBeenCalledWith(user, template.flowData);
-    });
-  });
 
   describe('$beforeInsert', () => {
     it('should call super.$beforeInsert', async () => {
@@ -1908,31 +1450,6 @@ describe('User model', () => {
       expect(superAfterInsertSpy).toHaveBeenCalledOnce();
     });
 
-    it('should call createUsageData', async () => {
-      const createUsageDataSpy = vi.spyOn(User.prototype, 'createUsageData');
-
-      await createUser({
-        fullName: 'Sample user',
-        email: 'user@automatisch.io',
-      });
-
-      expect(createUsageDataSpy).toHaveBeenCalledOnce();
-    });
   });
 
-  it('$afterFind should invoke omitEnterprisePermissionsWithoutValidLicense method', async () => {
-    const omitEnterprisePermissionsWithoutValidLicenseSpy = vi.spyOn(
-      User.prototype,
-      'omitEnterprisePermissionsWithoutValidLicense'
-    );
-
-    await createUser({
-      fullName: 'Sample user',
-      email: 'user@automatisch.io',
-    });
-
-    expect(
-      omitEnterprisePermissionsWithoutValidLicenseSpy
-    ).toHaveBeenCalledOnce();
-  });
 });

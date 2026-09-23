@@ -14,13 +14,11 @@ const run = async ({
   flowId,
   untilStepId,
   triggeredByRequest,
-  triggeredByMcp,
   request,
   testRun = false,
   resumeStepId,
   resumeExecutionId,
   initialData,
-  mcpToolId,
 }) => {
   // Build flow context
   const {
@@ -41,12 +39,6 @@ const run = async ({
   const { isAllowedToRunFlows } = await checkLimits({ flow });
 
   if (!testRun && !isAllowedToRunFlows) {
-    if (triggeredByMcp) {
-      return {
-        mcpError: `Flow execution quota exceeded for \`${flow.name}\`. Please check your subscription limits.`,
-      };
-    }
-
     return;
   }
 
@@ -120,9 +112,7 @@ const run = async ({
       actionSteps,
       testRun,
       triggeredByRequest,
-      triggeredByMcp,
       initialDataItem,
-      mcpToolId,
     });
 
     if (result) {

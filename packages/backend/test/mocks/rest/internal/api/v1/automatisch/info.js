@@ -4,7 +4,7 @@ const infoMock = () => {
       docsUrl: 'https://automatisch.io/docs',
       installationCompleted: true,
       isCloud: false,
-      isEnterprise: true,
+      isEnterprise: false,
       isMation: false,
     },
     meta: {
