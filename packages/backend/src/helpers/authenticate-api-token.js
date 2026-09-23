@@ -1,21 +1,22 @@
 import ApiToken from '@/models/api-token.js';
 
-export const authenticateApiToken = async (request, response, next) => {
-  const authorizationHeader = request.headers.authorization || '';
-  const [scheme, token] = authorizationHeader.split(' ');
+const authenticateApiToken = async (request, response, next) => {
+  const token = request.headers['x-api-token'];
 
-  if (scheme !== 'Bearer' || !token) {
-    return response.status(401).json({ error: 'Unauthorized' });
+  if (!token) {
+    return response.status(401).end();
   }
 
-  const apiToken = await ApiToken.query().findOne({ token });
+  try {
+    const apiToken = await ApiToken.query()
+      .findOne({ token })
+      .throwIfNotFound();
 
-  if (!apiToken) {
-    return response.status(401).json({ error: 'Unauthorized' });
+    request.apiToken = apiToken;
+    next();
+  } catch {
+    return response.status(401).end();
   }
-
-  request.apiToken = apiToken;
-  next();
 };
 
 export default authenticateApiToken;

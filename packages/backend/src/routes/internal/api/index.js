@@ -14,12 +14,16 @@ import adminPermissionsRouter from '@/routes/internal/api/v1/admin/permissions.j
 import adminTemplatesRouter from '@/routes/internal/api/v1/admin/templates.js';
 import adminApiTokensRouter from '@/routes/internal/api/v1/admin/api-tokens.js';
 import adminConfigRouter from '@/routes/internal/api/v1/admin/config.js';
+import adminAppsRouter from '@/routes/internal/api/v1/admin/apps.js';
+import adminSamlAuthProvidersRouter from '@/routes/internal/api/v1/admin/saml-auth-providers.js';
 import installationUsersRouter from '@/routes/internal/api/v1/installation/users.js';
 import foldersRouter from '@/routes/internal/api/v1/folders.js';
 import templatesRouter from '@/routes/internal/api/v1/templates.js';
 import formsRouter from '@/routes/internal/api/v1/forms.js';
 import mcpServersRouter from '@/routes/internal/api/v1/mcp-servers.js';
 import agentsRouter from '@/routes/internal/api/v1/agents.js';
+import samlAuthProvidersRouter from '@/routes/internal/api/v1/saml-auth-providers.js';
+import paymentRouter from '@/routes/internal/api/v1/payment.js';
 
 const router = Router();
 
@@ -37,11 +41,15 @@ router.use('/v1/admin/permissions', adminPermissionsRouter);
 router.use('/v1/admin/templates', adminTemplatesRouter);
 router.use('/v1/admin/api-tokens', adminApiTokensRouter);
 router.use('/v1/admin/config', adminConfigRouter);
+router.use('/v1/admin/apps', adminAppsRouter);
+router.use('/v1/admin/saml-auth-providers', adminSamlAuthProvidersRouter);
 router.use('/v1/installation/users', installationUsersRouter);
 router.use('/v1/folders', foldersRouter);
 router.use('/v1/templates', templatesRouter);
 router.use('/v1/forms', formsRouter);
 router.use('/v1/mcp-servers', mcpServersRouter);
 router.use('/v1/agents', agentsRouter);
+router.use('/v1/saml-auth-providers', samlAuthProvidersRouter);
+router.use('/v1/payment', paymentRouter);
 
 export default router;
