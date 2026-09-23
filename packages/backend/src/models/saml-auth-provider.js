@@ -47,7 +47,7 @@ class SamlAuthProvider extends Base {
   }
 
   get loginUrl() {
-    return `${appConfig.webAppUrl}/login/saml/${this.id}`;
+    return `${appConfig.webAppUrl}/login/saml/${encodeURIComponent(this.issuer)}`;
   }
 
   static relationMappings = () => ({
@@ -79,7 +79,7 @@ class SamlAuthProvider extends Base {
 
   get config() {
     return {
-      callbackUrl: `${appConfig.baseUrl}/login/saml/${this.id}/callback`,
+      callbackUrl: `${appConfig.baseUrl}/login/saml/${encodeURIComponent(this.issuer)}/callback`,
       cert: this.certificate,
       entryPoint: this.entryPoint,
       issuer: this.issuer,

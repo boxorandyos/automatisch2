@@ -1,6 +1,7 @@
 import actionSerializer from '@/serializers/action.js';
 import adminApiTokenFullSerializer from '@/serializers/admin/api-token-full.js';
 import adminApiTokenSerializer from '@/serializers/admin/api-token.js';
+import adminOAuthClientSerializer from '@/serializers/admin/oauth-client.js';
 import adminSamlAuthProviderSerializer from '@/serializers/admin-saml-auth-provider.js';
 import adminTemplateSerializer from '@/serializers/admin/template.js';
 import adminUserSerializer from '@/serializers/admin/user.js';
@@ -41,6 +42,7 @@ const serializers = {
   Action: actionSerializer,
   AdminApiToken: adminApiTokenSerializer,
   AdminApiTokenFull: adminApiTokenFullSerializer,
+  AdminOAuthClient: adminOAuthClientSerializer,
   AdminSamlAuthProvider: adminSamlAuthProviderSerializer,
   AdminTemplate: adminTemplateSerializer,
   AdminUser: adminUserSerializer,

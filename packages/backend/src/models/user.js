@@ -34,6 +34,8 @@ import {
   REMOVE_AFTER_30_DAYS_OR_150_JOBS,
   REMOVE_AFTER_7_DAYS_OR_50_JOBS,
 } from '@/helpers/remove-job-configuration.js';
+import billing from '@/helpers/billing/index.js';
+import { freePlan, getPlanById } from '@/helpers/billing/plans.js';
 
 class User extends Base {
   static tableName = 'users';
@@ -458,7 +460,19 @@ class User extends Base {
   }
 
   async isAllowedToRunFlows() {
-    return true;
+    if (appConfig.isSelfHosted) {
+      return true;
+    }
+
+    if (await this.inTrial()) {
+      return true;
+    }
+
+    if (await this.hasActiveSubscription()) {
+      return await this.withinLimits();
+    }
+
+    return false;
   }
 
   async inTrial() {
@@ -470,10 +484,73 @@ class User extends Base {
       return false;
     }
 
+    if (appConfig.isCloud && (await this.hasActiveSubscription())) {
+      return false;
+    }
+
     const expiryDate = DateTime.fromJSDate(this.trialExpiryDate);
     const now = DateTime.now();
 
     return now < expiryDate;
+  }
+
+  async hasActiveSubscription() {
+    if (!appConfig.isCloud) {
+      return false;
+    }
+
+    const subscription = await this.$relatedQuery('currentSubscription');
+
+    return subscription?.isValid || false;
+  }
+
+  async withinLimits() {
+    const currentSubscription = await this.$relatedQuery('currentSubscription');
+    const plan = getPlanById(currentSubscription?.paddlePlanId);
+    const usageData = await this.$relatedQuery('currentUsageData');
+    const consumedTaskCount = usageData?.consumedTaskCount || 0;
+
+    return consumedTaskCount < plan.quota;
+  }
+
+  async getPlanAndUsage() {
+    const currentSubscription = await this.$relatedQuery('currentSubscription');
+    const usageData = await this.$relatedQuery('currentUsageData');
+    const plan = currentSubscription?.isValid
+      ? getPlanById(currentSubscription.paddlePlanId)
+      : freePlan;
+
+    return {
+      usage: {
+        task: usageData?.consumedTaskCount || 0,
+      },
+      plan: {
+        id: plan.productId,
+        name: plan.name,
+        limit: plan.limit,
+      },
+    };
+  }
+
+  async getInvoices() {
+    const subscription = await this.$relatedQuery('currentSubscription');
+
+    if (!subscription) {
+      return [];
+    }
+
+    return await billing.paddleClient.getInvoices(
+      subscription.paddleSubscriptionId
+    );
+  }
+
+  async createUsageData(subscriptionId) {
+    return await this.$relatedQuery('usageData').insertAndFetch({
+      userId: this.id,
+      subscriptionId: subscriptionId || null,
+      consumedTaskCount: 0,
+      nextResetAt: DateTime.now().plus({ days: 30 }).toISO(),
+    });
   }
 
   async hasFolderAccess(folderId) {
@@ -711,6 +788,10 @@ class User extends Base {
 
   async $afterInsert(queryContext) {
     await super.$afterInsert(queryContext);
+
+    if (appConfig.isCloud) {
+      await this.createUsageData();
+    }
   }
 }
 
