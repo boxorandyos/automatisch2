@@ -9,8 +9,14 @@ import appsRouter from '@/routes/internal/api/v1/apps.js';
 import connectionsRouter from '@/routes/internal/api/v1/connections.js';
 import executionsRouter from '@/routes/internal/api/v1/executions.js';
 import adminUsersRouter from '@/routes/internal/api/v1/admin/users.js';
+import adminRolesRouter from '@/routes/internal/api/v1/admin/roles.js';
+import adminPermissionsRouter from '@/routes/internal/api/v1/admin/permissions.js';
+import adminTemplatesRouter from '@/routes/internal/api/v1/admin/templates.js';
+import adminApiTokensRouter from '@/routes/internal/api/v1/admin/api-tokens.js';
+import adminConfigRouter from '@/routes/internal/api/v1/admin/config.js';
 import installationUsersRouter from '@/routes/internal/api/v1/installation/users.js';
 import foldersRouter from '@/routes/internal/api/v1/folders.js';
+import templatesRouter from '@/routes/internal/api/v1/templates.js';
 
 const router = Router();
 
@@ -23,7 +29,13 @@ router.use('/v1/flows', flowsRouter);
 router.use('/v1/steps', stepsRouter);
 router.use('/v1/executions', executionsRouter);
 router.use('/v1/admin/users', adminUsersRouter);
+router.use('/v1/admin/roles', adminRolesRouter);
+router.use('/v1/admin/permissions', adminPermissionsRouter);
+router.use('/v1/admin/templates', adminTemplatesRouter);
+router.use('/v1/admin/api-tokens', adminApiTokensRouter);
+router.use('/v1/admin/config', adminConfigRouter);
 router.use('/v1/installation/users', installationUsersRouter);
 router.use('/v1/folders', foldersRouter);
+router.use('/v1/templates', templatesRouter);
 
 export default router;

@@ -161,6 +161,14 @@ const authorizationList = {
     action: 'read',
     subject: 'Flow',
   },
+  'GET /internal/api/v1/templates/': {
+    action: 'read',
+    subject: 'Flow',
+  },
+  'GET /internal/api/v1/templates/:templateId': {
+    action: 'read',
+    subject: 'Flow',
+  },
 };
 
 export const authorizeUser = async (request, response, next) => {
