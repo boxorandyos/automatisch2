@@ -2,6 +2,7 @@
 
 exports[`App model > list > should list all applications 1`] = `
 [
+  "agents",
   "airbrake",
   "airtable",
   "anthropic",
@@ -27,6 +28,7 @@ exports[`App model > list > should list all applications 1`] = `
   "flickr",
   "flowers-software",
   "formatter",
+  "forms",
   "frappe",
   "freescout",
   "ghost",
@@ -49,6 +51,7 @@ exports[`App model > list > should list all applications 1`] = `
   "mailchimp",
   "mailerlite",
   "mattermost",
+  "mcp",
   "miro",
   "mistral-ai",
   "monday",

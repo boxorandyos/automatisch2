@@ -5,6 +5,7 @@ import User from '@/models/user.js';
 import McpTool from '@/models/mcp-tool.js';
 import McpSession from '@/models/mcp-session.js';
 import McpToolExecution from '@/models/mcp-tool-execution.js';
+import appConfig from '@/config/app.js';
 
 class McpServer extends Base {
   static tableName = 'mcp_servers';
@@ -22,6 +23,14 @@ class McpServer extends Base {
       updatedAt: { type: 'string' },
     },
   };
+
+  static get virtualAttributes() {
+    return ['serverUrl'];
+  }
+
+  get serverUrl() {
+    return `${appConfig.baseUrl}/api/v1/mcp`;
+  }
 
   static relationMappings = () => ({
     user: {

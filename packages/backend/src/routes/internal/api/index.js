@@ -17,6 +17,9 @@ import adminConfigRouter from '@/routes/internal/api/v1/admin/config.js';
 import installationUsersRouter from '@/routes/internal/api/v1/installation/users.js';
 import foldersRouter from '@/routes/internal/api/v1/folders.js';
 import templatesRouter from '@/routes/internal/api/v1/templates.js';
+import formsRouter from '@/routes/internal/api/v1/forms.js';
+import mcpServersRouter from '@/routes/internal/api/v1/mcp-servers.js';
+import agentsRouter from '@/routes/internal/api/v1/agents.js';
 
 const router = Router();
 
@@ -37,5 +40,8 @@ router.use('/v1/admin/config', adminConfigRouter);
 router.use('/v1/installation/users', installationUsersRouter);
 router.use('/v1/folders', foldersRouter);
 router.use('/v1/templates', templatesRouter);
+router.use('/v1/forms', formsRouter);
+router.use('/v1/mcp-servers', mcpServersRouter);
+router.use('/v1/agents', agentsRouter);
 
 export default router;
