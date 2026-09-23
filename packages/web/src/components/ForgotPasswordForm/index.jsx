@@ -1,72 +1,68 @@
-import * as React from 'react';
+import LoadingButton from '@mui/lab/LoadingButton';
+import Alert from '@mui/material/Alert';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import Alert from '@mui/material/Alert';
-import LoadingButton from '@mui/lab/LoadingButton';
 
-import useForgotPassword from 'hooks/useForgotPassword';
 import Form from 'components/Form';
 import TextField from 'components/TextField';
+import useForgotPassword from 'hooks/useForgotPassword';
 import useFormatMessage from 'hooks/useFormatMessage';
 
 export default function ForgotPasswordForm() {
   const formatMessage = useFormatMessage();
-  const {
-    mutate: forgotPassword,
-    isPending: loading,
-    isSuccess,
-    isError,
-    error,
-  } = useForgotPassword();
+  const forgotPassword = useForgotPassword();
 
-  const handleSubmit = ({ email }) => {
-    forgotPassword({
-      email,
-    });
+  const onSubmit = (values) => {
+    forgotPassword.mutate({ email: values.email });
   };
 
   return (
     <Paper sx={{ px: 2, py: 4 }}>
       <Typography
-        variant="h3"
         align="center"
+        gutterBottom
         sx={{
           borderBottom: '1px solid',
           borderColor: (theme) => theme.palette.text.disabled,
-          pb: 2,
           mb: 2,
+          pb: 2,
         }}
-        gutterBottom
+        variant="h3"
       >
         {formatMessage('forgotPasswordForm.title')}
       </Typography>
-      <Form onSubmit={handleSubmit}>
+
+      <Form onSubmit={onSubmit}>
         <TextField
+          autoComplete="username"
+          fullWidth
           label={formatMessage('forgotPasswordForm.emailFieldLabel')}
+          margin="dense"
           name="email"
           required
-          fullWidth
-          margin="dense"
-          autoComplete="username"
         />
-        {isError && (
+
+        {forgotPassword.isError && (
           <Alert severity="error" sx={{ mt: 2 }}>
-            {error?.message || formatMessage('forgotPasswordForm.error')}
+            {forgotPassword.error?.message ||
+              formatMessage('forgotPasswordForm.error')}
           </Alert>
         )}
-        {isSuccess && (
+
+        {forgotPassword.isSuccess && (
           <Alert severity="success" sx={{ mt: 2 }}>
             {formatMessage('forgotPasswordForm.instructionsSent')}
           </Alert>
         )}
+
         <LoadingButton
+          color="primary"
+          disabled={forgotPassword.isSuccess}
+          fullWidth
+          loading={forgotPassword.isPending}
+          sx={{ boxShadow: 2, my: 3 }}
           type="submit"
           variant="contained"
-          color="primary"
-          sx={{ boxShadow: 2, my: 3 }}
-          loading={loading}
-          disabled={isSuccess}
-          fullWidth
         >
           {formatMessage('forgotPasswordForm.submit')}
         </LoadingButton>

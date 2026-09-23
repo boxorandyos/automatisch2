@@ -1,20 +1,19 @@
 import { yupResolver } from '@hookform/resolvers/yup';
 import LoadingButton from '@mui/lab/LoadingButton';
+import Alert from '@mui/material/Alert';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import Alert from '@mui/material/Alert';
-import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
-import * as React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import * as yup from 'yup';
 
 import Form from 'components/Form';
 import TextField from 'components/TextField';
 import * as URLS from 'config/urls';
+import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 import useFormatMessage from 'hooks/useFormatMessage';
 import useResetPassword from 'hooks/useResetPassword';
 
-const validationSchema = yup.object().shape({
+const schema = yup.object({
   password: yup.string().required('resetPasswordForm.mandatoryInput'),
   confirmPassword: yup
     .string()
@@ -23,26 +22,16 @@ const validationSchema = yup.object().shape({
 });
 
 export default function ResetPasswordForm() {
-  const enqueueSnackbar = useEnqueueSnackbar();
   const formatMessage = useFormatMessage();
+  const enqueueSnackbar = useEnqueueSnackbar();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const {
-    mutateAsync: resetPassword,
-    isPending,
-    isSuccess,
-    error,
-    isError,
-  } = useResetPassword();
+  const resetPassword = useResetPassword();
   const token = searchParams.get('token');
 
-  const handleSubmit = async (values) => {
-    const { password } = values;
+  const onSubmit = async ({ password }) => {
     try {
-      await resetPassword({
-        password,
-        token,
-      });
+      await resetPassword.mutateAsync({ password, token });
       enqueueSnackbar(formatMessage('resetPasswordForm.passwordUpdated'), {
         variant: 'success',
         SnackbarProps: {
@@ -50,95 +39,100 @@ export default function ResetPasswordForm() {
         },
       });
       navigate(URLS.LOGIN);
-    } catch (error) {
-      console.error(error);
+    } catch (submitError) {
+      console.error(submitError);
     }
   };
 
-  const renderError = () => {
-    if (!isError) {
-      return null;
+  const errorMessages = (() => {
+    if (!resetPassword.isError) {
+      return [];
     }
 
-    const errors = error?.response?.data?.errors?.general || [
-      error?.message || formatMessage('resetPasswordForm.error'),
-    ];
-
-    return errors.map((error) => (
-      <Alert key={error} severity="error" sx={{ mt: 2 }}>
-        {error}
-      </Alert>
-    ));
-  };
+    return (
+      resetPassword.error?.response?.data?.errors?.general || [
+        resetPassword.error?.message ||
+          formatMessage('resetPasswordForm.error'),
+      ]
+    );
+  })();
 
   return (
     <Paper sx={{ px: 2, py: 4 }}>
       <Typography
-        variant="h3"
         align="center"
+        gutterBottom
         sx={{
           borderBottom: '1px solid',
           borderColor: (theme) => theme.palette.text.disabled,
-          pb: 2,
           mb: 2,
+          pb: 2,
         }}
-        gutterBottom
+        variant="h3"
       >
         {formatMessage('resetPasswordForm.title')}
       </Typography>
 
       <Form
-        onSubmit={handleSubmit}
-        resolver={yupResolver(validationSchema)}
         mode="onChange"
+        onSubmit={onSubmit}
+        resolver={yupResolver(schema)}
         render={({ formState: { errors, touchedFields } }) => (
           <>
             <TextField
-              label={formatMessage('resetPasswordForm.passwordFieldLabel')}
-              name="password"
+              error={touchedFields.password && Boolean(errors.password)}
               fullWidth
-              margin="dense"
-              type="password"
-              error={touchedFields.password && !!errors?.password}
               helperText={
-                touchedFields.password && errors?.password?.message
-                  ? formatMessage(errors?.password?.message, {
+                touchedFields.password && errors.password?.message
+                  ? formatMessage(errors.password.message, {
                       inputName: formatMessage(
                         'resetPasswordForm.passwordFieldLabel',
                       ),
                     })
                   : ''
               }
-            />
-            <TextField
-              label={formatMessage(
-                'resetPasswordForm.confirmPasswordFieldLabel',
-              )}
-              name="confirmPassword"
-              fullWidth
+              label={formatMessage('resetPasswordForm.passwordFieldLabel')}
               margin="dense"
+              name="password"
               type="password"
-              error={touchedFields.confirmPassword && !!errors?.confirmPassword}
+            />
+
+            <TextField
+              error={
+                touchedFields.confirmPassword && Boolean(errors.confirmPassword)
+              }
+              fullWidth
               helperText={
-                touchedFields.confirmPassword &&
-                errors?.confirmPassword?.message
-                  ? formatMessage(errors?.confirmPassword?.message, {
+                touchedFields.confirmPassword && errors.confirmPassword?.message
+                  ? formatMessage(errors.confirmPassword.message, {
                       inputName: formatMessage(
                         'resetPasswordForm.confirmPasswordFieldLabel',
                       ),
                     })
                   : ''
               }
+              label={formatMessage(
+                'resetPasswordForm.confirmPasswordFieldLabel',
+              )}
+              margin="dense"
+              name="confirmPassword"
+              type="password"
             />
-            {renderError()}
+
+            {errorMessages.map((message) => (
+              <Alert key={message} severity="error" sx={{ mt: 2 }}>
+                {message}
+              </Alert>
+            ))}
+
             <LoadingButton
+              color="primary"
+              disabled={resetPassword.isSuccess || !token}
+              fullWidth
+              loading={resetPassword.isPending}
+              sx={{ boxShadow: 2, my: 3 }}
               type="submit"
               variant="contained"
-              color="primary"
-              sx={{ boxShadow: 2, my: 3 }}
-              loading={isPending}
-              disabled={isSuccess || !token}
-              fullWidth
             >
               {formatMessage('resetPasswordForm.submit')}
             </LoadingButton>

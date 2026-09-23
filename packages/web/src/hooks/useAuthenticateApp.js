@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import {
@@ -6,128 +6,150 @@ import {
   processPopupMessage,
 } from 'helpers/authenticationSteps';
 import computeAuthStepVariables from 'helpers/computeAuthStepVariables';
-import useFormatMessage from './useFormatMessage';
-import useAppAuth from './useAppAuth';
-import useCreateConnection from './useCreateConnection';
-import useCreateConnectionAuthUrl from './useCreateConnectionAuthUrl';
-import useUpdateConnection from './useUpdateConnection';
-import useResetConnection from './useResetConnection';
-import useVerifyConnection from './useVerifyConnection';
+import useAppAuth from 'hooks/useAppAuth';
+import useCreateConnection from 'hooks/useCreateConnection';
+import useCreateConnectionAuthUrl from 'hooks/useCreateConnectionAuthUrl';
+import useFormatMessage from 'hooks/useFormatMessage';
+import useResetConnection from 'hooks/useResetConnection';
+import useUpdateConnection from 'hooks/useUpdateConnection';
+import useVerifyConnection from 'hooks/useVerifyConnection';
 
-function getSteps(auth, hasConnection, useShared) {
-  if (hasConnection) {
-    if (useShared) {
-      return auth?.sharedReconnectionSteps;
-    }
-    return auth?.reconnectionSteps;
+function resolveAuthSteps(authPayload, { reconnecting, shared }) {
+  if (!authPayload) {
+    return undefined;
   }
 
-  if (useShared) {
-    return auth?.sharedAuthenticationSteps;
+  if (reconnecting && shared) {
+    return authPayload.sharedReconnectionSteps;
   }
 
-  return auth?.authenticationSteps;
+  if (reconnecting) {
+    return authPayload.reconnectionSteps;
+  }
+
+  if (shared) {
+    return authPayload.sharedAuthenticationSteps;
+  }
+
+  return authPayload.authenticationSteps;
 }
 
-export default function useAuthenticateApp(payload) {
-  const { appKey, oauthClientId, connectionId, useShared = false } = payload;
-  const { data: auth } = useAppAuth(appKey);
+/**
+ * Runs the connection authentication step list for an app.
+ * Returns { authenticate, inProgress }.
+ */
+export default function useAuthenticateApp({
+  appKey,
+  connectionId,
+  oauthClientId,
+  useShared = false,
+} = {}) {
   const queryClient = useQueryClient();
+  const formatMessage = useFormatMessage();
+  const { data: authResponse } = useAppAuth(appKey);
+
   const { mutateAsync: createConnection } = useCreateConnection(appKey);
   const { mutateAsync: createConnectionAuthUrl } = useCreateConnectionAuthUrl();
   const { mutateAsync: updateConnection } = useUpdateConnection();
   const { mutateAsync: resetConnection } = useResetConnection();
   const { mutateAsync: verifyConnection } = useVerifyConnection();
-  const [authenticationInProgress, setAuthenticationInProgress] =
-    React.useState(false);
-  const formatMessage = useFormatMessage();
-  const steps = React.useMemo(() => {
-    return getSteps(auth?.data, !!connectionId, useShared);
-  }, [auth, connectionId, useShared]);
 
-  const authenticate = React.useMemo(() => {
-    if (!steps?.length) return;
+  const [inProgress, setInProgress] = useState(false);
 
-    return async function authenticate(payload = {}) {
-      const { fields } = payload;
-      setAuthenticationInProgress(true);
+  const steps = useMemo(
+    () =>
+      resolveAuthSteps(authResponse?.data, {
+        reconnecting: Boolean(connectionId),
+        shared: useShared,
+      }),
+    [authResponse, connectionId, useShared],
+  );
 
-      const response = {
+  const authenticate = useMemo(() => {
+    if (!steps?.length) {
+      return undefined;
+    }
+
+    return async function runAuthentication(options = {}) {
+      const { fields, oauthClientId: oauthClientIdOverride } = options;
+      setInProgress(true);
+
+      const state = {
         key: appKey,
-        oauthClientId: oauthClientId || payload.oauthClientId,
+        oauthClientId: oauthClientId || oauthClientIdOverride,
         connectionId,
         fields,
       };
-      let stepIndex = 0;
-      while (stepIndex < steps?.length) {
-        const step = steps[stepIndex];
-        const variables = computeAuthStepVariables(step.arguments, response);
 
-        try {
-          let popup;
+      try {
+        for (const step of steps) {
+          const variables = computeAuthStepVariables(step.arguments, state);
 
           if (step.type === 'openWithPopup') {
-            popup = processOpenWithPopup(variables.url);
+            const popup = processOpenWithPopup(variables.url);
 
             if (!popup) {
               throw new Error(formatMessage('addAppConnection.popupReminder'));
             }
+
+            state[step.name] = await processPopupMessage(popup);
+            continue;
           }
 
-          if (step.type === 'mutation') {
-            if (step.name === 'createConnection') {
-              const stepResponse = await createConnection(variables);
-              response[step.name] = stepResponse.data;
-              response.connectionId = stepResponse.data.id;
-            } else if (step.name === 'generateAuthUrl') {
-              const stepResponse = await createConnectionAuthUrl(
-                response.connectionId,
-              );
-              response[step.name] = stepResponse.data;
-            } else if (step.name === 'updateConnection') {
-              const stepResponse = await updateConnection({
-                ...variables,
-                connectionId: response.connectionId,
-              });
+          if (step.type !== 'mutation') {
+            continue;
+          }
 
-              response[step.name] = stepResponse.data;
-            } else if (step.name === 'resetConnection') {
-              const stepResponse = await resetConnection(response.connectionId);
-
-              response[step.name] = stepResponse.data;
-            } else if (step.name === 'verifyConnection') {
-              const stepResponse = await verifyConnection(
-                response.connectionId,
-              );
-              response[step.name] = stepResponse?.data;
+          switch (step.name) {
+            case 'createConnection': {
+              const result = await createConnection(variables);
+              state.createConnection = result.data;
+              state.connectionId = result.data.id;
+              break;
             }
-          } else if (step.type === 'openWithPopup') {
-            const stepResponse = await processPopupMessage(popup);
-            response[step.name] = stepResponse;
+            case 'generateAuthUrl': {
+              const result = await createConnectionAuthUrl(state.connectionId);
+              state.generateAuthUrl = result.data;
+              break;
+            }
+            case 'updateConnection': {
+              const result = await updateConnection({
+                ...variables,
+                connectionId: state.connectionId,
+              });
+              state.updateConnection = result.data;
+              break;
+            }
+            case 'resetConnection': {
+              const result = await resetConnection(state.connectionId);
+              state.resetConnection = result.data;
+              break;
+            }
+            case 'verifyConnection': {
+              const result = await verifyConnection(state.connectionId);
+              state.verifyConnection = result?.data;
+              break;
+            }
+            default:
+              break;
           }
-        } catch (err) {
-          console.error(err);
-          setAuthenticationInProgress(false);
-
-          await queryClient.invalidateQueries({
-            queryKey: ['apps', appKey, 'connections'],
-          });
-
-          throw err;
         }
 
-        stepIndex++;
+        await queryClient.invalidateQueries({
+          queryKey: ['apps', appKey, 'connections'],
+        });
+
+        return state;
+      } catch (error) {
+        await queryClient.invalidateQueries({
+          queryKey: ['apps', appKey, 'connections'],
+        });
+        throw error;
+      } finally {
+        setInProgress(false);
       }
-
-      await queryClient.invalidateQueries({
-        queryKey: ['apps', appKey, 'connections'],
-      });
-
-      setAuthenticationInProgress(false);
-
-      return response;
     };
-    // keep formatMessage out of it as it causes infinite loop.
+    // formatMessage omitted intentionally (unstable identity).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     steps,
@@ -142,8 +164,5 @@ export default function useAuthenticateApp(payload) {
     verifyConnection,
   ]);
 
-  return {
-    authenticate,
-    inProgress: authenticationInProgress,
-  };
+  return { authenticate, inProgress };
 }

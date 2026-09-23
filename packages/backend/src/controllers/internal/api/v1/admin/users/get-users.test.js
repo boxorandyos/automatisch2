@@ -1,45 +1,46 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
+
 import app from '../../../../../../app.js';
-import createAuthTokenByUserId from '@/helpers/create-auth-token-by-user-id.js';
 import { createRole } from '@/factories/role.js';
 import { createUser } from '@/factories/user.js';
+import createAuthTokenByUserId from '@/helpers/create-auth-token-by-user-id.js';
 import getUsersMock from '@/mocks/rest/internal/api/v1/admin/users/get-users.js';
 
 describe('GET /internal/api/v1/admin/users', () => {
-  let currentUser, currentUserRole, anotherUser, anotherUserRole, token;
+  let adminToken;
+  let adminUser;
+  let adminRole;
+  let memberUser;
+  let memberRole;
 
   beforeEach(async () => {
-    currentUserRole = await createRole({ name: 'Admin' });
-
-    currentUser = await createUser({
-      roleId: currentUserRole.id,
-      fullName: 'Current User',
+    adminRole = await createRole({ name: 'Admin' });
+    adminUser = await createUser({
+      roleId: adminRole.id,
+      fullName: 'Admin Person',
     });
 
-    anotherUserRole = await createRole({
-      name: 'Another user role',
+    memberRole = await createRole({ name: 'Member role' });
+    memberUser = await createUser({
+      roleId: memberRole.id,
+      fullName: 'Member Person',
     });
 
-    anotherUser = await createUser({
-      roleId: anotherUserRole.id,
-      fullName: 'Another User',
-    });
-
-    token = await createAuthTokenByUserId(currentUser.id);
+    adminToken = await createAuthTokenByUserId(adminUser.id);
   });
 
-  it('should return users data', async () => {
+  it('lists users ordered for the admin users table', async () => {
     const response = await request(app)
       .get('/internal/api/v1/admin/users')
-      .set('Authorization', token)
+      .set('Authorization', adminToken)
       .expect(200);
 
-    const expectedResponsePayload = await getUsersMock(
-      [anotherUser, currentUser],
-      [anotherUserRole, currentUserRole]
+    const expectedBody = await getUsersMock(
+      [adminUser, memberUser],
+      [adminRole, memberRole]
     );
 
-    expect(response.body).toStrictEqual(expectedResponsePayload);
+    expect(response.body).toStrictEqual(expectedBody);
   });
 });

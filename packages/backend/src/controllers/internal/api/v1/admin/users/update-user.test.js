@@ -1,68 +1,65 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import Crypto from 'node:crypto';
+import { beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
-import Crypto from 'crypto';
+
 import app from '../../../../../../app.js';
-import createAuthTokenByUserId from '@/helpers/create-auth-token-by-user-id.js';
-import { createUser } from '@/factories/user.js';
 import { createRole } from '@/factories/role.js';
+import { createUser } from '@/factories/user.js';
+import createAuthTokenByUserId from '@/helpers/create-auth-token-by-user-id.js';
 import updateUserMock from '@/mocks/rest/internal/api/v1/admin/users/update-user.js';
 
 describe('PATCH /internal/api/v1/admin/users/:userId', () => {
-  let currentUser, adminRole, token;
+  let adminToken;
 
   beforeEach(async () => {
-    adminRole = await createRole({ name: 'Admin' });
-    currentUser = await createUser({ roleId: adminRole.id });
-
-    token = await createAuthTokenByUserId(currentUser.id);
+    const adminRole = await createRole({ name: 'Admin' });
+    const adminUser = await createUser({ roleId: adminRole.id });
+    adminToken = await createAuthTokenByUserId(adminUser.id);
   });
 
-  it('should return updated user with valid data for another user', async () => {
-    const anotherUser = await createUser();
-    const anotherRole = await createRole();
+  it('updates another user and returns the refreshed record', async () => {
+    const existingUser = await createUser();
+    const replacementRole = await createRole();
 
-    const anotherUserUpdatedData = {
-      email: 'updated@sample.com',
-      fullName: 'Updated Full Name',
-      roleId: anotherRole.id,
+    const patch = {
+      email: 'new-address@example.com',
+      fullName: 'Renamed User',
+      roleId: replacementRole.id,
     };
 
     const response = await request(app)
-      .patch(`/internal/api/v1/admin/users/${anotherUser.id}`)
-      .set('Authorization', token)
-      .send(anotherUserUpdatedData)
+      .patch(`/internal/api/v1/admin/users/${existingUser.id}`)
+      .set('Authorization', adminToken)
+      .send(patch)
       .expect(200);
 
-    const refetchedAnotherUser = await anotherUser.$query();
+    const refreshedUser = await existingUser.$query();
 
-    const expectedPayload = updateUserMock(
-      {
-        ...refetchedAnotherUser,
-        ...anotherUserUpdatedData,
-      },
-      anotherRole
+    expect(response.body).toMatchObject(
+      updateUserMock(
+        {
+          ...refreshedUser,
+          ...patch,
+        },
+        replacementRole
+      )
     );
-
-    expect(response.body).toMatchObject(expectedPayload);
   });
 
-  it('should return HTTP 422 with invalid user data', async () => {
-    const anotherUser = await createUser();
-
-    const anotherUserUpdatedData = {
-      email: null,
-      fullName: null,
-      roleId: null,
-    };
+  it('rejects invalid field types with model validation errors', async () => {
+    const existingUser = await createUser();
 
     const response = await request(app)
-      .patch(`/internal/api/v1/admin/users/${anotherUser.id}`)
-      .set('Authorization', token)
-      .send(anotherUserUpdatedData)
+      .patch(`/internal/api/v1/admin/users/${existingUser.id}`)
+      .set('Authorization', adminToken)
+      .send({
+        email: null,
+        fullName: null,
+        roleId: null,
+      })
       .expect(422);
 
-    expect(response.body.meta.type).toStrictEqual('ModelValidation');
-
+    expect(response.body.meta.type).toBe('ModelValidation');
     expect(response.body.errors).toMatchObject({
       email: ['must be string'],
       fullName: ['must be string'],
@@ -70,19 +67,17 @@ describe('PATCH /internal/api/v1/admin/users/:userId', () => {
     });
   });
 
-  it('should return not found response for not existing user UUID', async () => {
-    const notExistingUserUUID = Crypto.randomUUID();
-
+  it('responds 404 when patching a missing user', async () => {
     await request(app)
-      .patch(`/internal/api/v1/admin/users/${notExistingUserUUID}`)
-      .set('Authorization', token)
+      .patch(`/internal/api/v1/admin/users/${Crypto.randomUUID()}`)
+      .set('Authorization', adminToken)
       .expect(404);
   });
 
-  it('should return bad request response for invalid UUID', async () => {
+  it('responds 400 for a malformed user id', async () => {
     await request(app)
-      .patch('/internal/api/v1/admin/users/invalidUserUUID')
-      .set('Authorization', token)
+      .patch('/internal/api/v1/admin/users/bad-id')
+      .set('Authorization', adminToken)
       .expect(400);
   });
 });

@@ -1,74 +1,73 @@
-import PropTypes from 'prop-types';
 import DeleteIcon from '@mui/icons-material/Delete';
 import IconButton from '@mui/material/IconButton';
 import { useQueryClient } from '@tanstack/react-query';
+import PropTypes from 'prop-types';
+import { useCallback, useState } from 'react';
 
-import { getGeneralErrorMessage } from 'helpers/errors';
-import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
-import * as React from 'react';
 import ConfirmationDialog from 'components/ConfirmationDialog';
-import useFormatMessage from 'hooks/useFormatMessage';
+import { getGeneralErrorMessage } from 'helpers/errors';
 import useAdminUserDelete from 'hooks/useAdminUserDelete';
+import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
+import useFormatMessage from 'hooks/useFormatMessage';
 
-function DeleteUserButton(props) {
-  const { userId } = props;
-  const [showConfirmation, setShowConfirmation] = React.useState(false);
-  const {
-    mutateAsync: deleteUser,
-    error: deleteUserError,
-    reset: resetDeleteUser,
-  } = useAdminUserDelete(userId);
-
+export default function DeleteUserButton({ userId }) {
   const formatMessage = useFormatMessage();
   const enqueueSnackbar = useEnqueueSnackbar();
   const queryClient = useQueryClient();
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const generalErrorMessage = getGeneralErrorMessage({
-    error: deleteUserError,
+  const {
+    mutateAsync: removeUser,
+    error,
+    reset,
+  } = useAdminUserDelete(userId);
+
+  const errorText = getGeneralErrorMessage({
+    error,
     fallbackMessage: formatMessage('deleteUserButton.deleteError'),
   });
 
-  const handleConfirm = React.useCallback(async () => {
+  const closeDialog = () => {
+    setDialogOpen(false);
+    reset();
+  };
+
+  const confirmDeletion = useCallback(async () => {
     try {
-      await deleteUser();
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      setShowConfirmation(false);
+      await removeUser();
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      setDialogOpen(false);
       enqueueSnackbar(formatMessage('deleteUserButton.successfullyDeleted'), {
         variant: 'success',
         SnackbarProps: {
           'data-test': 'snackbar-delete-user-success',
         },
       });
-    } catch (error) {
-      console.error(error);
+    } catch (deleteError) {
+      console.error(deleteError);
     }
-  }, [deleteUser]);
-
-  const handleClose = () => {
-    setShowConfirmation(false);
-    resetDeleteUser();
-  };
+  }, [enqueueSnackbar, formatMessage, queryClient, removeUser]);
 
   return (
     <>
       <IconButton
         data-test="delete-button"
-        onClick={() => setShowConfirmation(true)}
+        onClick={() => setDialogOpen(true)}
         size="small"
       >
         <DeleteIcon />
       </IconButton>
 
       <ConfirmationDialog
-        open={showConfirmation}
-        title={formatMessage('deleteUserButton.title')}
-        description={formatMessage('deleteUserButton.description')}
-        onClose={handleClose}
-        onConfirm={handleConfirm}
         cancelButtonChildren={formatMessage('deleteUserButton.cancel')}
         confirmButtonChildren={formatMessage('deleteUserButton.confirm')}
         data-test="delete-user-modal"
-        errorMessage={generalErrorMessage}
+        description={formatMessage('deleteUserButton.description')}
+        errorMessage={errorText}
+        onClose={closeDialog}
+        onConfirm={confirmDeletion}
+        open={dialogOpen}
+        title={formatMessage('deleteUserButton.title')}
       />
     </>
   );
@@ -77,5 +76,3 @@ function DeleteUserButton(props) {
 DeleteUserButton.propTypes = {
   userId: PropTypes.string.isRequired,
 };
-
-export default DeleteUserButton;

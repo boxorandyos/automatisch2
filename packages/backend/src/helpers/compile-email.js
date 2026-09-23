@@ -1,15 +1,23 @@
-import path from 'path';
-import fs from 'fs';
-import handlebars from 'handlebars';
-import { fileURLToPath } from 'url';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import Handlebars from 'handlebars';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const emailViewsRoot = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '../views/emails'
+);
 
-const compileEmail = (emailPath, replacements = {}) => {
-  const filePath = path.join(__dirname, `../views/emails/${emailPath}.hbs`);
-  const source = fs.readFileSync(filePath, 'utf-8').toString();
-  const template = handlebars.compile(source);
-  return template(replacements);
-};
+/**
+ * Render a Handlebars email template from views/emails/<name>.hbs.
+ * @param {string} templateName template basename without extension
+ * @param {Record<string, unknown>} [context]
+ * @returns {string} rendered HTML
+ */
+export default function compileEmail(templateName, context = {}) {
+  const absolutePath = join(emailViewsRoot, `${templateName}.hbs`);
+  const rawTemplate = readFileSync(absolutePath, 'utf8');
+  const render = Handlebars.compile(rawTemplate);
 
-export default compileEmail;
+  return render(context);
+}

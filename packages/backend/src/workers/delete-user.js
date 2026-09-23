@@ -1,6 +1,8 @@
 import { generateWorker } from '@/workers/worker.js';
 import { deleteUserJob } from '@/jobs/delete-user.js';
 
-const deleteUserWorker = generateWorker('delete-user', deleteUserJob);
+const QUEUE_NAME = 'delete-user';
+
+const deleteUserWorker = generateWorker(QUEUE_NAME, deleteUserJob);
 
 export default deleteUserWorker;

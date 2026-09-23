@@ -1,114 +1,120 @@
 import * as Sentry from '@sentry/node';
 import * as Tracing from '@sentry/tracing';
+import objection from 'objection';
 
 import appConfig from '@/config/app.js';
-import objection from 'objection';
-const {
-  NotFoundError,
-  ValidationError,
-  UniqueViolationError,
-  ForeignKeyViolationError,
-  DataError,
-} = objection;
-import QuotaExceededError from '@/errors/quote-exceeded.js';
 import HttpError from '@/errors/http.js';
 import NotAuthorizedError from '@/errors/not-authorized.js';
+import QuotaExceededError from '@/errors/quote-exceeded.js';
 
-const isSentryEnabled = () => {
-  if (appConfig.isDev || appConfig.isTest) return false;
-  return !!appConfig.sentryDsn;
-};
+const {
+  DataError,
+  ForeignKeyViolationError,
+  NotFoundError,
+  UniqueViolationError,
+  ValidationError,
+} = objection;
+
+const EXPECTED_ERROR_TYPES = [
+  DataError,
+  ForeignKeyViolationError,
+  HttpError,
+  NotAuthorizedError,
+  NotFoundError,
+  QuotaExceededError,
+  UniqueViolationError,
+  ValidationError,
+];
+
+function sentryIsActive() {
+  if (appConfig.isDev || appConfig.isTest) {
+    return false;
+  }
+
+  return Boolean(appConfig.sentryDsn);
+}
+
+function isMissingAppLookup(error) {
+  const message = error?.message;
+  if (typeof message !== 'string') {
+    return false;
+  }
+
+  return (
+    message.includes('An application with the') &&
+    message.includes("key couldn't be found.")
+  );
+}
+
+function shouldDropEvent(error) {
+  if (!error) {
+    return false;
+  }
+
+  if (error.message === 'Not Found') {
+    return true;
+  }
+
+  if (isMissingAppLookup(error)) {
+    return true;
+  }
+
+  return EXPECTED_ERROR_TYPES.some((ErrorType) => error instanceof ErrorType);
+}
 
 export function init(app) {
-  if (!isSentryEnabled()) return;
+  if (!sentryIsActive()) {
+    return;
+  }
 
   return Sentry.init({
-    beforeSend(event, hint) {
-      if (
-        hint.originalException.message === 'Not Found' ||
-        hint.originalException instanceof NotFoundError
-      ) {
-        return null;
-      }
-
-      if (hint.originalException instanceof QuotaExceededError) {
-        return null;
-      }
-
-      if (notFoundAppError(hint.originalException)) {
-        return null;
-      }
-
-      if (hint.originalException instanceof ValidationError) {
-        return null;
-      }
-
-      if (hint.originalException instanceof UniqueViolationError) {
-        return null;
-      }
-
-      if (hint.originalException instanceof ForeignKeyViolationError) {
-        return null;
-      }
-
-      if (hint.originalException instanceof DataError) {
-        return null;
-      }
-
-      if (hint.originalException instanceof HttpError) {
-        return null;
-      }
-
-      if (hint.originalException instanceof NotAuthorizedError) {
-        return null;
-      }
-
-      return event;
-    },
-    enabled: !!appConfig.sentryDsn,
     dsn: appConfig.sentryDsn,
+    enabled: true,
+    tracesSampleRate: 1,
     integrations: [
-      app && new Sentry.Integrations.Http({ tracing: true }),
-      app && new Tracing.Integrations.Express({ app }),
+      app ? new Sentry.Integrations.Http({ tracing: true }) : null,
+      app ? new Tracing.Integrations.Express({ app }) : null,
     ].filter(Boolean),
-    tracesSampleRate: 1.0,
+    beforeSend(event, hint) {
+      return shouldDropEvent(hint?.originalException) ? null : event;
+    },
   });
 }
 
-const notFoundAppError = (error) => {
-  return (
-    error.message.includes('An application with the') &&
-    error.message.includes("key couldn't be found.")
-  );
-};
-
 export function attachRequestHandler(app) {
-  if (!isSentryEnabled()) return;
+  if (!sentryIsActive()) {
+    return;
+  }
 
   app.use(Sentry.Handlers.requestHandler());
 }
 
 export function attachTracingHandler(app) {
-  if (!isSentryEnabled()) return;
+  if (!sentryIsActive()) {
+    return;
+  }
 
   app.use(Sentry.Handlers.tracingHandler());
 }
 
 export function attachErrorHandler(app) {
-  if (!isSentryEnabled()) return;
+  if (!sentryIsActive()) {
+    return;
+  }
 
   app.use(
     Sentry.Handlers.errorHandler({
       shouldHandleError() {
-        // TODO: narrow down the captured errors in time as we receive samples
         return true;
       },
     })
   );
 }
 
-export function captureException(exception, captureContext) {
-  if (!isSentryEnabled()) return;
+export function captureException(error, context) {
+  if (!sentryIsActive()) {
+    return;
+  }
 
-  return Sentry.captureException(exception, captureContext);
+  return Sentry.captureException(error, context);
 }

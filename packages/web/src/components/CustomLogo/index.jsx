@@ -1,20 +1,20 @@
 import useAutomatischConfig from 'hooks/useAutomatischConfig';
+
 import { LogoImage } from './style';
 
-const CustomLogo = () => {
-  const { data: configData, isLoading } = useAutomatischConfig();
-  const config = configData?.data;
+export default function CustomLogo() {
+  const { data, isLoading } = useAutomatischConfig();
+  const svgMarkup = data?.data?.logoSvgData;
 
-  if (isLoading || !config?.logoSvgData) return null;
-
-  const logoSvgData = config?.logoSvgData;
+  if (isLoading || !svgMarkup) {
+    return null;
+  }
 
   return (
     <LogoImage
+      alt=""
       data-test="custom-logo"
-      src={`data:image/svg+xml;utf8,${encodeURIComponent(logoSvgData)}`}
+      src={`data:image/svg+xml;utf8,${encodeURIComponent(svgMarkup)}`}
     />
   );
-};
-
-export default CustomLogo;
+}

@@ -1,15 +1,15 @@
+import paginateRest from '@/helpers/pagination.js';
 import { renderObject } from '@/helpers/renderer.js';
 import User from '@/models/user.js';
-import paginateRest from '@/helpers/pagination.js';
 
-export default async (request, response) => {
-  const usersQuery = User.query()
-    .withGraphFetched({
-      role: true,
-    })
+export default async function getUsers(request, response) {
+  const page = request.query.page;
+
+  const query = User.query()
+    .withGraphFetched('role')
     .orderBy('full_name', 'asc');
 
-  const users = await paginateRest(usersQuery, request.query.page);
+  const pageResult = await paginateRest(query, page);
 
-  renderObject(response, users);
-};
+  renderObject(response, pageResult);
+}

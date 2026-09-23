@@ -1,48 +1,47 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import Crypto from 'node:crypto';
+import { beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
-import Crypto from 'crypto';
+
 import app from '../../../../../../app.js';
-import createAuthTokenByUserId from '@/helpers/create-auth-token-by-user-id.js';
-import { createUser } from '@/factories/user.js';
 import { createRole } from '@/factories/role.js';
+import { createUser } from '@/factories/user.js';
+import createAuthTokenByUserId from '@/helpers/create-auth-token-by-user-id.js';
 import getUserMock from '@/mocks/rest/internal/api/v1/admin/users/get-user.js';
 
 describe('GET /internal/api/v1/admin/users/:userId', () => {
-  let currentUser, currentUserRole, anotherUser, anotherUserRole, token;
+  let adminToken;
+  let targetUser;
+  let targetRole;
 
   beforeEach(async () => {
-    currentUserRole = await createRole({ name: 'Admin' });
-    currentUser = await createUser({ roleId: currentUserRole.id });
+    const adminRole = await createRole({ name: 'Admin' });
+    const adminUser = await createUser({ roleId: adminRole.id });
+    adminToken = await createAuthTokenByUserId(adminUser.id);
 
-    anotherUser = await createUser();
-    anotherUserRole = await anotherUser.$relatedQuery('role');
-
-    token = await createAuthTokenByUserId(currentUser.id);
+    targetUser = await createUser();
+    targetRole = await targetUser.$relatedQuery('role');
   });
 
-  it('should return specified user info', async () => {
+  it('returns the requested user payload', async () => {
     const response = await request(app)
-      .get(`/internal/api/v1/admin/users/${anotherUser.id}`)
-      .set('Authorization', token)
+      .get(`/internal/api/v1/admin/users/${targetUser.id}`)
+      .set('Authorization', adminToken)
       .expect(200);
 
-    const expectedPayload = getUserMock(anotherUser, anotherUserRole);
-    expect(response.body).toStrictEqual(expectedPayload);
+    expect(response.body).toStrictEqual(getUserMock(targetUser, targetRole));
   });
 
-  it('should return not found response for not existing user UUID', async () => {
-    const notExistingUserUUID = Crypto.randomUUID();
-
+  it('responds 404 when the user id does not exist', async () => {
     await request(app)
-      .get(`/internal/api/v1/admin/users/${notExistingUserUUID}`)
-      .set('Authorization', token)
+      .get(`/internal/api/v1/admin/users/${Crypto.randomUUID()}`)
+      .set('Authorization', adminToken)
       .expect(404);
   });
 
-  it('should return bad request response for invalid UUID', async () => {
+  it('responds 400 for a malformed user id', async () => {
     await request(app)
-      .get('/internal/api/v1/admin/users/invalidUserUUID')
-      .set('Authorization', token)
+      .get('/internal/api/v1/admin/users/not-a-uuid')
+      .set('Authorization', adminToken)
       .expect(400);
   });
 });

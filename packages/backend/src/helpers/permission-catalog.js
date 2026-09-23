@@ -1,38 +1,35 @@
-const Connection = {
-  label: 'Connection',
-  key: 'Connection',
-};
+/**
+ * Canonical permission subjects and actions for Community Edition.
+ * Consumed by Permission model validation.
+ */
 
-const Flow = {
-  label: 'Flow',
-  key: 'Flow',
-};
+const SUBJECTS = Object.freeze([
+  { key: 'Connection', label: 'Connection' },
+  { key: 'Flow', label: 'Flow' },
+  { key: 'Execution', label: 'Execution' },
+]);
 
-const Execution = {
-  label: 'Execution',
-  key: 'Execution',
-};
+const CONDITIONS = Object.freeze([
+  { key: 'isCreator', label: 'Is creator' },
+]);
 
-const permissionCatalog = {
-  conditions: [
-    {
-      key: 'isCreator',
-      label: 'Is creator',
-    },
-  ],
-  actions: [
-    {
-      label: 'Read',
-      key: 'read',
-      subjects: [Connection.key, Execution.key, Flow.key],
-    },
-    {
-      label: 'Manage',
-      key: 'manage',
-      subjects: [Connection.key, Flow.key],
-    },
-  ],
-  subjects: [Connection, Flow, Execution],
-};
+const ACTIONS = Object.freeze([
+  {
+    key: 'read',
+    label: 'Read',
+    subjects: ['Connection', 'Execution', 'Flow'],
+  },
+  {
+    key: 'manage',
+    label: 'Manage',
+    subjects: ['Connection', 'Flow'],
+  },
+]);
+
+const permissionCatalog = Object.freeze({
+  subjects: SUBJECTS,
+  conditions: CONDITIONS,
+  actions: ACTIONS,
+});
 
 export default permissionCatalog;
