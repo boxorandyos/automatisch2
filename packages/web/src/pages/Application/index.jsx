@@ -18,10 +18,8 @@ import Tab from '@mui/material/Tab';
 import AddIcon from '@mui/icons-material/Add';
 
 import useFormatMessage from 'hooks/useFormatMessage';
-import useAppConfig from 'hooks/useAppConfig.ee';
 import useCurrentUserAbility from 'hooks/useCurrentUserAbility';
 import * as URLS from 'config/urls';
-import SplitButton from 'components/SplitButton';
 import ConditionalIconButton from 'components/ConditionalIconButton';
 import AppConnections from 'components/AppConnections';
 import AppFlows from 'components/AppFlows';
@@ -30,7 +28,6 @@ import AppIcon from 'components/AppIcon';
 import Container from 'components/Container';
 import PageTitle from 'components/PageTitle';
 import useApp from 'hooks/useApp';
-import useOAuthClients from 'hooks/useOAuthClients';
 import Can from 'components/Can';
 import { AppPropType } from 'propTypes/propTypes';
 
@@ -63,57 +60,13 @@ export default function Application() {
   const flowsPathMatch = useMatch({ path: URLS.APP_FLOWS_PATTERN, end: false });
   const { appKey } = useParams();
   const navigate = useNavigate();
-  const { data: appOAuthClients } = useOAuthClients(appKey);
 
   const { data, loading } = useApp(appKey);
   const app = data?.data || {};
 
-  const { data: appConfig } = useAppConfig(appKey);
-
   const currentUserAbility = useCurrentUserAbility();
 
   const goToApplicationPage = () => navigate('connections');
-
-  const connectionOptions = React.useMemo(() => {
-    const addCustomConnection = {
-      label: formatMessage('app.addConnection'),
-      key: 'addConnection',
-      'data-test': 'add-connection-button',
-      to: URLS.APP_ADD_CONNECTION(appKey, false),
-      disabled:
-        !currentUserAbility.can('manage', 'Connection') ||
-        appConfig?.data?.useOnlyPredefinedAuthClients === true ||
-        appConfig?.data?.disabled === true,
-    };
-
-    const addConnectionWithOAuthClient = {
-      label: formatMessage('app.addConnectionWithOAuthClient'),
-      key: 'addConnectionWithOAuthClient',
-      'data-test': 'add-connection-with-auth-client-button',
-      to: URLS.APP_ADD_CONNECTION(appKey, true),
-      disabled:
-        !currentUserAbility.can('manage', 'Connection') ||
-        appOAuthClients?.data?.length === 0 ||
-        appConfig?.data?.disabled === true,
-    };
-
-    // means there is no app config. defaulting to custom connections only
-    if (!appConfig?.data) {
-      return [addCustomConnection];
-    }
-
-    // means only OAuth clients are allowed for connection creation
-    if (appConfig?.data?.useOnlyPredefinedAuthClients === true) {
-      return [addConnectionWithOAuthClient];
-    }
-
-    // means there is no OAuth client. so we don't show the `addConnectionWithOAuthClient`
-    if (appOAuthClients?.data?.length === 0) {
-      return [addCustomConnection];
-    }
-
-    return [addCustomConnection, addConnectionWithOAuthClient];
-  }, [appKey, appConfig, appOAuthClients, currentUserAbility, formatMessage]);
 
   if (loading) return null;
 
@@ -164,10 +117,20 @@ export default function Application() {
                   element={
                     <Can I="manage" a="Connection" passThrough>
                       {(allowed) => (
-                        <SplitButton
+                        <ConditionalIconButton
+                          type="submit"
+                          variant="contained"
+                          color="primary"
+                          size="large"
+                          component={Link}
+                          to={URLS.APP_ADD_CONNECTION(appKey)}
+                          fullWidth
+                          icon={<AddIcon />}
                           disabled={!allowed}
-                          options={connectionOptions}
-                        />
+                          data-test="add-connection-button"
+                        >
+                          {formatMessage('app.addConnection')}
+                        </ConditionalIconButton>
                       )}
                     </Can>
                   }

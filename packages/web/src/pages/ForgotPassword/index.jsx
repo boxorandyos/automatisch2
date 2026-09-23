@@ -1,14 +1,13 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
-import useCloud from 'hooks/useCloud';
 import Container from 'components/Container';
-import ResetPasswordForm from 'components/ResetPasswordForm/index.ee';
-export default function ResetPassword() {
-  useCloud({ redirect: true });
+import ForgotPasswordForm from 'components/ForgotPasswordForm/index';
+
+export default function ForgotPassword() {
   return (
     <Box sx={{ display: 'flex', flex: 1, alignItems: 'center' }}>
       <Container maxWidth="sm">
-        <ResetPasswordForm />
+        <ForgotPasswordForm />
       </Container>
     </Box>
   );

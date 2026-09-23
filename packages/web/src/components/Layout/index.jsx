@@ -11,9 +11,6 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import PropTypes from 'prop-types';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import SecurityIcon from '@mui/icons-material/Security';
-import CallToActionIcon from '@mui/icons-material/CallToAction';
-import DnsIcon from '@mui/icons-material/Dns';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
 
 import * as URLS from 'config/urls';
 import useFormatMessage from 'hooks/useFormatMessage';
@@ -31,46 +28,26 @@ const additionalDrawerLinkIcons = {
   ArrowBackIosNew: ArrowBackIosNewIcon,
 };
 
-const generateDrawerLinks = ({ isEnterprise, isCloud }) =>
-  [
-    {
-      Icon: SwapCallsIcon,
-      primary: 'drawer.flows',
-      to: URLS.FLOWS,
-      dataTest: 'flows-page-drawer-link',
-    },
-    isEnterprise && {
-      Icon: CallToActionIcon,
-      primary: 'drawer.forms',
-      to: URLS.FORMS,
-      dataTest: 'forms-page-drawer-link',
-    },
-    isEnterprise &&
-      !isCloud && {
-        Icon: SmartToyIcon,
-        primary: 'drawer.agents',
-        to: URLS.AGENTS,
-        dataTest: 'agents-page-drawer-link',
-      },
-    isEnterprise && {
-      Icon: DnsIcon,
-      primary: 'drawer.mcpServers',
-      to: URLS.MCP_SERVERS,
-      dataTest: 'mcp-servers-page-drawer-link',
-    },
-    {
-      Icon: AppsIcon,
-      primary: 'drawer.apps',
-      to: URLS.APPS,
-      dataTest: 'apps-page-drawer-link',
-    },
-    {
-      Icon: HistoryIcon,
-      primary: 'drawer.executions',
-      to: URLS.EXECUTIONS,
-      dataTest: 'executions-page-drawer-link',
-    },
-  ].filter(Boolean);
+const drawerLinks = [
+  {
+    Icon: SwapCallsIcon,
+    primary: 'drawer.flows',
+    to: URLS.FLOWS,
+    dataTest: 'flows-page-drawer-link',
+  },
+  {
+    Icon: AppsIcon,
+    primary: 'drawer.apps',
+    to: URLS.APPS,
+    dataTest: 'apps-page-drawer-link',
+  },
+  {
+    Icon: HistoryIcon,
+    primary: 'drawer.executions',
+    to: URLS.EXECUTIONS,
+    dataTest: 'executions-page-drawer-link',
+  },
+];
 
 const generateDrawerBottomLinks = ({
   disableNotificationsPage,
@@ -137,13 +114,6 @@ function PublicLayout({ children }) {
       formatMessage,
     });
   }, [formatMessage, config, version.newVersionCount]);
-
-  const drawerLinks = React.useMemo(() => {
-    return generateDrawerLinks({
-      isEnterprise: automatischInfo?.isEnterprise,
-      isCloud: automatischInfo?.isCloud,
-    });
-  }, [automatischInfo?.isEnterprise, automatischInfo?.isCloud]);
 
   return (
     <>

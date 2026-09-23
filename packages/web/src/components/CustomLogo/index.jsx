@@ -1,5 +1,5 @@
 import useAutomatischConfig from 'hooks/useAutomatischConfig';
-import { LogoImage } from './style.ee';
+import { LogoImage } from './style';
 
 const CustomLogo = () => {
   const { data: configData, isLoading } = useAutomatischConfig();
