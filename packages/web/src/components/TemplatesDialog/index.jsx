@@ -1,14 +1,11 @@
 import * as React from 'react';
-import {
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  List,
-  Typography,
-} from '@mui/material';
+import PropTypes from 'prop-types';
+import CloseIcon from '@mui/icons-material/Close';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
 import { useNavigate } from 'react-router-dom';
 
 import TemplateItem from 'components/TemplatesDialog/TemplateItem';
@@ -16,37 +13,53 @@ import * as URLS from 'config/urls';
 import useFormatMessage from 'hooks/useFormatMessage';
 import useTemplates from 'hooks/useTemplates';
 
-export default function TemplatesDialog() {
+export default function TemplatesDialog({ open = true }) {
   const formatMessage = useFormatMessage();
   const navigate = useNavigate();
-  const { data, isLoading } = useTemplates();
-  const templates = data?.data || [];
+  const { data: templates } = useTemplates();
 
-  const onClose = () => navigate(URLS.FLOWS);
+  const handleClose = () => {
+    navigate('..');
+  };
 
   return (
-    <Dialog open onClose={onClose} fullWidth maxWidth="sm" data-test="templates-dialog">
+    <Dialog open={open} onClose={handleClose} data-test="templates-dialog">
       <DialogTitle>{formatMessage('templatesDialog.title')}</DialogTitle>
+
+      <IconButton
+        aria-label="close"
+        onClick={handleClose}
+        sx={{
+          position: 'absolute',
+          right: 8,
+          top: 8,
+          color: (theme) => theme.palette.grey[500],
+        }}
+      >
+        <CloseIcon />
+      </IconButton>
+
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {formatMessage('templatesDialog.description')}
-        </Typography>
+        <DialogContentText mb={2}>
+          {templates?.meta?.count !== 0 &&
+            formatMessage('templatesDialog.description')}
 
-        {isLoading && (
-          <CircularProgress sx={{ display: 'block', m: '20px auto' }} />
-        )}
+          {templates?.meta?.count === 0 &&
+            formatMessage('adminTemplatesPage.noResult')}
+        </DialogContentText>
 
-        <List>
-          {templates.map((template) => (
-            <TemplateItem key={template.id} template={template} />
-          ))}
-        </List>
+        {templates?.data?.map((template) => (
+          <TemplateItem
+            key={template.id}
+            template={template}
+            to={URLS.CREATE_FLOW_FROM_TEMPLATE(template.id)}
+          />
+        ))}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>
-          {formatMessage('templatesDialog.close')}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
+
+TemplatesDialog.propTypes = {
+  open: PropTypes.bool,
+};

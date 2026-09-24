@@ -3,7 +3,8 @@ const apiTokenSerializer = (apiToken) => {
 
   return {
     id: apiToken.id,
-    token: token.slice(-4),
+    token:
+      token.substring(0, 4) + '...' + token.substring(token.length - 4),
     createdAt: apiToken.createdAt.getTime(),
     updatedAt: apiToken.updatedAt.getTime(),
   };

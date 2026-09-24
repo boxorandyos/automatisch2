@@ -11,6 +11,7 @@ export default function useAdminDeleteTemplate(templateId) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'templates'] });
+      queryClient.invalidateQueries({ queryKey: ['templates'] });
     },
   });
 }

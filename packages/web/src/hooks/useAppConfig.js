@@ -5,8 +5,17 @@ export default function useAppConfig(appKey) {
   const query = useQuery({
     queryKey: ['apps', appKey, 'config'],
     queryFn: async ({ signal }) => {
-      const { data } = await api.get(`/v1/apps/${appKey}/config`, { signal });
-      return data;
+      try {
+        const { data } = await api.get(`/v1/apps/${appKey}/config`, {
+          signal,
+        });
+        return data;
+      } catch (error) {
+        if (error.response?.status === 404) {
+          return null;
+        }
+        throw error;
+      }
     },
     enabled: !!appKey,
   });

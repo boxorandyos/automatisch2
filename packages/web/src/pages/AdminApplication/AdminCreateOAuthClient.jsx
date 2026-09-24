@@ -8,8 +8,10 @@ import Form from 'components/Form';
 import Switch from 'components/Switch';
 import TextField from 'components/TextField';
 import * as URLS from 'config/urls';
+import useAdminCreateAppConfig from 'hooks/useAdminCreateAppConfig';
 import useAdminCreateOAuthClient from 'hooks/useAdminCreateOAuthClient';
 import useAppAuth from 'hooks/useAppAuth';
+import useAppConfig from 'hooks/useAppConfig';
 import useFormatMessage from 'hooks/useFormatMessage';
 
 export default function AdminCreateOAuthClient({ appKey }) {
@@ -17,10 +19,21 @@ export default function AdminCreateOAuthClient({ appKey }) {
   const navigate = useNavigate();
   const { data: authData } = useAppAuth(appKey);
   const fields = authData?.data?.fields || [];
-  const { mutateAsync: createClient, isPending } =
+  const { data: appConfigData, isLoading: isAppConfigLoading } =
+    useAppConfig(appKey);
+  const { mutateAsync: createConfig, isPending: isCreatingConfig } =
+    useAdminCreateAppConfig(appKey);
+  const { mutateAsync: createClient, isPending: isCreatingClient } =
     useAdminCreateOAuthClient(appKey);
 
   const handleSubmit = async (values) => {
+    if (!appConfigData?.data) {
+      await createConfig({
+        useOnlyPredefinedAuthClients: false,
+        disabled: false,
+      });
+    }
+
     const { name, active, ...formattedAuthDefaults } = values;
     await createClient({
       name,
@@ -32,7 +45,7 @@ export default function AdminCreateOAuthClient({ appKey }) {
 
   const defaultValues = {
     name: '',
-    active: true,
+    active: false,
   };
   fields.forEach((field) => {
     defaultValues[field.key] = '';
@@ -40,19 +53,20 @@ export default function AdminCreateOAuthClient({ appKey }) {
 
   return (
     <Form
+      data-test="auth-client-form"
       onSubmit={handleSubmit}
       defaultValues={defaultValues}
-      render={() => (
+      render={({ formState: { isDirty } }) => (
         <Stack gap={2}>
+          <Switch
+            name="active"
+            label={formatMessage('oauthClient.inputActive')}
+          />
           <TextField
             name="name"
             label={formatMessage('oauthClient.inputName')}
             fullWidth
             required
-          />
-          <Switch
-            name="active"
-            label={formatMessage('oauthClient.inputActive')}
           />
           {fields.map((field) => (
             <TextField
@@ -63,7 +77,15 @@ export default function AdminCreateOAuthClient({ appKey }) {
               type={field.type === 'password' ? 'password' : 'text'}
             />
           ))}
-          <LoadingButton type="submit" variant="contained" loading={isPending}>
+          <LoadingButton
+            data-test="submit-auth-client-form"
+            type="submit"
+            variant="contained"
+            color="primary"
+            sx={{ boxShadow: 2 }}
+            loading={isCreatingClient || isCreatingConfig}
+            disabled={isAppConfigLoading || !isDirty}
+          >
             {formatMessage('oauthClient.buttonSubmit')}
           </LoadingButton>
         </Stack>

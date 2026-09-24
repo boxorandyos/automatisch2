@@ -1,5 +1,4 @@
 import LoadingButton from '@mui/lab/LoadingButton';
-import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import PropTypes from 'prop-types';
 import * as React from 'react';
@@ -11,10 +10,12 @@ import TextField from 'components/TextField';
 import useAdminOAuthClient from 'hooks/useAdminOAuthClient';
 import useAdminUpdateOAuthClient from 'hooks/useAdminUpdateOAuthClient';
 import useAppAuth from 'hooks/useAppAuth';
+import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 import useFormatMessage from 'hooks/useFormatMessage';
 
 export default function AdminUpdateOAuthClient({ appKey }) {
   const formatMessage = useFormatMessage();
+  const enqueueSnackbar = useEnqueueSnackbar();
   const { oauthClientId } = useParams();
   const { data, isLoading } = useAdminOAuthClient(appKey, oauthClientId);
   const client = data?.data;
@@ -24,21 +25,21 @@ export default function AdminUpdateOAuthClient({ appKey }) {
     appKey,
     oauthClientId,
   );
-  const [success, setSuccess] = React.useState(false);
 
   if (isLoading || !client) {
     return null;
   }
 
   const handleSubmit = async (values) => {
-    setSuccess(false);
     const { name, active, ...formattedAuthDefaults } = values;
     await updateClient({
       name,
       active,
       formattedAuthDefaults,
     });
-    setSuccess(true);
+    enqueueSnackbar(formatMessage('updateOAuthClient.success'), {
+      variant: 'success',
+    });
   };
 
   const defaultValues = {
@@ -49,19 +50,20 @@ export default function AdminUpdateOAuthClient({ appKey }) {
 
   return (
     <Form
+      data-test="auth-client-form"
       onSubmit={handleSubmit}
       defaultValues={defaultValues}
-      render={() => (
+      render={({ formState: { isDirty } }) => (
         <Stack gap={2}>
+          <Switch
+            name="active"
+            label={formatMessage('oauthClient.inputActive')}
+          />
           <TextField
             name="name"
             label={formatMessage('oauthClient.inputName')}
             fullWidth
             required
-          />
-          <Switch
-            name="active"
-            label={formatMessage('oauthClient.inputActive')}
           />
           {fields.map((field) => (
             <TextField
@@ -72,12 +74,15 @@ export default function AdminUpdateOAuthClient({ appKey }) {
               type={field.type === 'password' ? 'password' : 'text'}
             />
           ))}
-          {success && (
-            <Alert severity="success">
-              {formatMessage('updateOAuthClient.success')}
-            </Alert>
-          )}
-          <LoadingButton type="submit" variant="contained" loading={isPending}>
+          <LoadingButton
+            data-test="submit-auth-client-form"
+            type="submit"
+            variant="contained"
+            color="primary"
+            sx={{ boxShadow: 2 }}
+            loading={isPending}
+            disabled={!isDirty}
+          >
             {formatMessage('oauthClient.buttonSubmit')}
           </LoadingButton>
         </Stack>

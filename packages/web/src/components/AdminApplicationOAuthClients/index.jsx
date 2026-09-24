@@ -1,17 +1,18 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Box,
   Button,
+  Card,
+  CardActionArea,
+  CardContent,
   Chip,
   CircularProgress,
-  List,
-  ListItemButton,
-  ListItemText,
+  Stack,
   Typography,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 
+import NoResultFound from 'components/NoResultFound';
 import * as URLS from 'config/urls';
 import useAdminOAuthClients from 'hooks/useAdminOAuthClients';
 import useFormatMessage from 'hooks/useFormatMessage';
@@ -25,48 +26,63 @@ export default function AdminApplicationOAuthClients({ appKey }) {
     return <CircularProgress sx={{ display: 'block', m: '20px auto' }} />;
   }
 
-  return (
-    <Box>
-      <Button
-        variant="contained"
-        component={Link}
+  if (!clients.length) {
+    return (
+      <NoResultFound
         to={URLS.ADMIN_APP_AUTH_CLIENTS_CREATE(appKey)}
-        sx={{ mb: 2 }}
-      >
-        {formatMessage('createOAuthClient.button')}
-      </Button>
+        text={formatMessage('adminAppsOAuthClients.noOauthClients')}
+      />
+    );
+  }
 
-      {!clients.length && (
-        <Typography color="text.secondary">
-          {formatMessage('adminAppsOAuthClients.noOauthClients')}
-        </Typography>
-      )}
+  const sortedClients = clients.slice().sort((a, b) => {
+    if (a.id < b.id) return -1;
+    if (a.id > b.id) return 1;
+    return 0;
+  });
 
-      <List>
-        {clients.map((client) => (
-          <ListItemButton
-            key={client.id}
+  return (
+    <div>
+      {sortedClients.map((client) => (
+        <Card sx={{ mb: 1 }} key={client.id} data-test="auth-client">
+          <CardActionArea
             component={Link}
             to={URLS.ADMIN_APP_AUTH_CLIENT(appKey, client.id)}
           >
-            <ListItemText
-              primary={client.name}
-              secondary={
+            <CardContent>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="h6" noWrap>
+                  {client.name}
+                </Typography>
                 <Chip
                   size="small"
-                  label={
+                  color={client.active ? 'success' : 'info'}
+                  variant={client.active ? 'filled' : 'outlined'}
+                  label={formatMessage(
                     client.active
-                      ? formatMessage('adminAppsOAuthClients.statusActive')
-                      : formatMessage('adminAppsOAuthClients.statusInactive')
-                  }
-                  color={client.active ? 'success' : 'default'}
+                      ? 'adminAppsOAuthClients.statusActive'
+                      : 'adminAppsOAuthClients.statusInactive',
+                  )}
                 />
-              }
-            />
-          </ListItemButton>
-        ))}
-      </List>
-    </Box>
+              </Stack>
+            </CardContent>
+          </CardActionArea>
+        </Card>
+      ))}
+
+      <Stack justifyContent="flex-end" direction="row">
+        <Link to={URLS.ADMIN_APP_AUTH_CLIENTS_CREATE(appKey)}>
+          <Button
+            variant="contained"
+            sx={{ mt: 2 }}
+            component="div"
+            data-test="create-auth-client-button"
+          >
+            {formatMessage('createOAuthClient.button')}
+          </Button>
+        </Link>
+      </Stack>
+    </div>
   );
 }
 

@@ -73,13 +73,15 @@ export default function AdminApplication() {
               value={URLS.ADMIN_APP_SETTINGS_PATTERN}
               component={Link}
             />
-            <Tab
-              label={formatMessage('adminApps.oauthClients')}
-              to={URLS.ADMIN_APP_AUTH_CLIENTS(appKey)}
-              value={URLS.ADMIN_APP_AUTH_CLIENTS_PATTERN}
-              component={Link}
-              data-test="oauth-clients-tab"
-            />
+            {app.supportsOauthClients && (
+              <Tab
+                label={formatMessage('adminApps.oauthClients')}
+                to={URLS.ADMIN_APP_AUTH_CLIENTS(appKey)}
+                value={URLS.ADMIN_APP_AUTH_CLIENTS_PATTERN}
+                component={Link}
+                data-test="oauth-clients-tab"
+              />
+            )}
           </Tabs>
         </Box>
 
@@ -88,18 +90,22 @@ export default function AdminApplication() {
             path="settings"
             element={<AdminApplicationSettings appKey={appKey} />}
           />
-          <Route
-            path="oauth-clients"
-            element={<AdminApplicationOAuthClients appKey={appKey} />}
-          />
-          <Route
-            path="oauth-clients/create"
-            element={<AdminCreateOAuthClient appKey={appKey} />}
-          />
-          <Route
-            path="oauth-clients/:oauthClientId"
-            element={<AdminUpdateOAuthClient appKey={appKey} />}
-          />
+          {app.supportsOauthClients && (
+            <>
+              <Route
+                path="oauth-clients"
+                element={<AdminApplicationOAuthClients appKey={appKey} />}
+              />
+              <Route
+                path="oauth-clients/create"
+                element={<AdminCreateOAuthClient appKey={appKey} />}
+              />
+              <Route
+                path="oauth-clients/:oauthClientId"
+                element={<AdminUpdateOAuthClient appKey={appKey} />}
+              />
+            </>
+          )}
           <Route
             index
             element={<Navigate to={URLS.ADMIN_APP_SETTINGS(appKey)} replace />}
