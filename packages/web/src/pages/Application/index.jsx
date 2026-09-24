@@ -21,12 +21,12 @@ import useFormatMessage from 'hooks/useFormatMessage';
 import useCurrentUserAbility from 'hooks/useCurrentUserAbility';
 import * as URLS from 'config/urls';
 import ConditionalIconButton from 'components/ConditionalIconButton';
+import SplitButton from 'components/SplitButton';
 import AppConnections from 'components/AppConnections';
 import AppFlows from 'components/AppFlows';
 import AddAppConnection from 'components/AddAppConnection';
 import AppIcon from 'components/AppIcon';
 import Container from 'components/Container';
-import OAuthClientsDialog from 'components/OAuthClientsDialog';
 import PageTitle from 'components/PageTitle';
 import useApp from 'hooks/useApp';
 import useAppConfig from 'hooks/useAppConfig';
@@ -72,27 +72,59 @@ export default function Application() {
   const oauthClients = (oauthClientsData?.data || []).filter(
     (client) => client.active,
   );
-  const [oauthDialogOpen, setOauthDialogOpen] = React.useState(false);
 
   const currentUserAbility = useCurrentUserAbility();
 
   const goToApplicationPage = () => navigate('connections');
 
-  const handleAddConnection = React.useCallback(() => {
-    if (appConfig?.useOnlyPredefinedAuthClients && oauthClients.length) {
-      setOauthDialogOpen(true);
-      return;
-    }
-    navigate(URLS.APP_ADD_CONNECTION(appKey));
-  }, [appConfig?.useOnlyPredefinedAuthClients, appKey, navigate, oauthClients.length]);
+  const connectionOptions = React.useMemo(() => {
+    const canManageConnection = currentUserAbility.can('manage', 'Connection');
 
-  const handleOAuthClientClick = React.useCallback(
-    (client) => {
-      setOauthDialogOpen(false);
-      navigate(URLS.APP_ADD_CONNECTION_WITH_OAUTH_CLIENT_ID(appKey, client.id));
-    },
-    [appKey, navigate],
-  );
+    const addCustomConnection = {
+      label: formatMessage('app.addConnection'),
+      key: 'addConnection',
+      'data-test': 'add-connection-button',
+      to: URLS.APP_ADD_CONNECTION(appKey, false),
+      disabled:
+        !canManageConnection ||
+        appConfig?.useOnlyPredefinedAuthClients === true ||
+        appConfig?.disabled === true,
+    };
+
+    const addConnectionWithOAuthClient = {
+      label: formatMessage('app.addConnectionWithOAuthClient'),
+      key: 'addConnectionWithOAuthClient',
+      'data-test': 'add-connection-with-auth-client-button',
+      to: URLS.APP_ADD_CONNECTION(appKey, true),
+      disabled:
+        !canManageConnection ||
+        oauthClients.length === 0 ||
+        appConfig?.disabled === true,
+    };
+
+    // No app config: custom connections only.
+    if (!appConfig) {
+      return [addCustomConnection];
+    }
+
+    // Predefined OAuth clients only.
+    if (appConfig.useOnlyPredefinedAuthClients === true) {
+      return [addConnectionWithOAuthClient];
+    }
+
+    // No OAuth clients: custom only.
+    if (oauthClients.length === 0) {
+      return [addCustomConnection];
+    }
+
+    return [addCustomConnection, addConnectionWithOAuthClient];
+  }, [
+    appKey,
+    appConfig,
+    oauthClients.length,
+    currentUserAbility,
+    formatMessage,
+  ]);
 
   if (loading) return null;
 
@@ -143,28 +175,10 @@ export default function Application() {
                   element={
                     <Can I="manage" a="Connection" passThrough>
                       {(allowed) => (
-                        <ConditionalIconButton
-                          type="submit"
-                          variant="contained"
-                          color="primary"
-                          size="large"
-                          fullWidth
-                          icon={<AddIcon />}
+                        <SplitButton
                           disabled={!allowed}
-                          data-test="add-connection-button"
-                          onClick={handleAddConnection}
-                          {...(!(
-                            appConfig?.useOnlyPredefinedAuthClients &&
-                            oauthClients.length
-                          )
-                            ? {
-                                component: Link,
-                                to: URLS.APP_ADD_CONNECTION(appKey),
-                              }
-                            : {})}
-                        >
-                          {formatMessage('app.addConnection')}
-                        </ConditionalIconButton>
+                          options={connectionOptions}
+                        />
                       )}
                     </Can>
                   }
@@ -172,14 +186,6 @@ export default function Application() {
               </Routes>
             </Grid>
           </Grid>
-
-          {oauthDialogOpen && (
-            <OAuthClientsDialog
-              appKey={appKey}
-              onClose={() => setOauthDialogOpen(false)}
-              onClientClick={handleOAuthClientClick}
-            />
-          )}
 
           <Grid container>
             <Grid item xs>

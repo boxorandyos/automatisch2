@@ -22,6 +22,8 @@ import useAppConnections from 'hooks/useAppConnections';
 import useAppConfig from 'hooks/useAppConfig';
 import useOAuthClients from 'hooks/useOAuthClients';
 import useTestConnection from 'hooks/useTestConnection';
+import useAuthenticateApp from 'hooks/useAuthenticateApp';
+import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 
 const ADD_CONNECTION_VALUE = 'ADD_CONNECTION';
 const ADD_SHARED_CONNECTION_VALUE = 'ADD_SHARED_CONNECTION';
@@ -47,16 +49,21 @@ function ChooseConnectionSubstep(props) {
   } = props;
   const { appKey } = step;
   const formatMessage = useFormatMessage();
+  const enqueueSnackbar = useEnqueueSnackbar();
 
   const editorContext = React.useContext(EditorContext);
   const [showAddConnectionDialog, setShowAddConnectionDialog] =
     React.useState(false);
   const [showOAuthClientsDialog, setShowOAuthClientsDialog] =
     React.useState(false);
-  const [oauthClientId, setOauthClientId] = React.useState();
   const [submitting, setSubmitting] = React.useState(false);
 
   const queryClient = useQueryClient();
+
+  const { authenticate } = useAuthenticateApp({
+    appKey: application.key,
+    useShared: true,
+  });
 
   const {
     data: appConnectionsData,
@@ -96,24 +103,49 @@ function ChooseConnectionSubstep(props) {
       appWithConnections?.map((connection) => optionGenerator(connection)) ||
       [];
 
-    if (!appConfig?.useOnlyPredefinedAuthClients) {
-      options.push({
-        label: formatMessage('chooseConnectionSubstep.addNewConnection'),
-        value: ADD_CONNECTION_VALUE,
-      });
+    const addCustomConnection = {
+      label: formatMessage('chooseConnectionSubstep.addNewConnection'),
+      value: ADD_CONNECTION_VALUE,
+    };
+
+    const addConnectionWithOAuthClient = {
+      label: formatMessage(
+        'chooseConnectionSubstep.addConnectionWithOAuthClient',
+      ),
+      value: ADD_SHARED_CONNECTION_VALUE,
+    };
+
+    // No app config: allow custom connections only.
+    if (!appConfig) {
+      return options.concat([addCustomConnection]);
     }
 
-    if (activeOAuthClients.length > 0) {
-      options.push({
-        label: formatMessage('chooseConnectionSubstep.addNewSharedConnection'),
-        value: ADD_SHARED_CONNECTION_VALUE,
-      });
+    // Connections disabled: existing connections only.
+    if (appConfig.disabled) {
+      return options;
     }
 
-    return options;
+    // Predefined OAuth clients only.
+    if (appConfig.useOnlyPredefinedAuthClients === true) {
+      if (activeOAuthClients.length > 0) {
+        return options.concat([addConnectionWithOAuthClient]);
+      }
+
+      return options;
+    }
+
+    // Custom connections only when no OAuth clients exist.
+    if (activeOAuthClients.length === 0) {
+      return options.concat([addCustomConnection]);
+    }
+
+    return options.concat([
+      addCustomConnection,
+      addConnectionWithOAuthClient,
+    ]);
   }, [
     activeOAuthClients.length,
-    appConfig?.useOnlyPredefinedAuthClients,
+    appConfig,
     appConnectionsData,
     formatMessage,
   ]);
@@ -124,7 +156,6 @@ function ChooseConnectionSubstep(props) {
     async (response) => {
       setSubmitting(true);
       setShowAddConnectionDialog(false);
-      setOauthClientId(undefined);
       const connectionId = response?.createConnection?.id;
       if (connectionId) {
         await refetchAppConnections();
@@ -142,11 +173,42 @@ function ChooseConnectionSubstep(props) {
     [onChange, refetchAppConnections, step],
   );
 
-  const handleOAuthClientClick = React.useCallback((client) => {
-    setShowOAuthClientsDialog(false);
-    setOauthClientId(client.id);
-    setShowAddConnectionDialog(true);
-  }, []);
+  const handleOAuthClientClick = React.useCallback(
+    async (client) => {
+      try {
+        const response = await authenticate?.({
+          oauthClientId: client.id,
+        });
+        const connectionId = response?.createConnection?.id;
+
+        if (connectionId) {
+          await refetchAppConnections();
+          onChange({
+            step: {
+              ...step,
+              connection: {
+                id: connectionId,
+              },
+            },
+          });
+        }
+      } catch (error) {
+        enqueueSnackbar(error?.message || formatMessage('genericError'), {
+          variant: 'error',
+        });
+      } finally {
+        setShowOAuthClientsDialog(false);
+      }
+    },
+    [
+      authenticate,
+      enqueueSnackbar,
+      formatMessage,
+      onChange,
+      refetchAppConnections,
+      step,
+    ],
+  );
 
   const handleChange = React.useCallback(
     async (event, selectedOption) => {
@@ -155,7 +217,6 @@ function ChooseConnectionSubstep(props) {
         const connectionId = selectedOption?.value;
 
         if (connectionId === ADD_CONNECTION_VALUE) {
-          setOauthClientId(undefined);
           setShowAddConnectionDialog(true);
         } else if (connectionId === ADD_SHARED_CONNECTION_VALUE) {
           setShowOAuthClientsDialog(true);
@@ -256,7 +317,6 @@ function ChooseConnectionSubstep(props) {
         <AddAppConnection
           onClose={handleAddConnectionClose}
           application={application}
-          oauthClientId={oauthClientId}
         />
       )}
 
