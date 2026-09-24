@@ -35,6 +35,9 @@ export default function DeleteApiTokenButton({ apiTokenId }) {
       setDialogOpen(false);
       enqueueSnackbar(formatMessage('deleteApiTokenButton.successfullyDeleted'), {
         variant: 'success',
+        SnackbarProps: {
+          'data-test': 'snackbar-delete-api-token-success',
+        },
       });
     } catch (deleteError) {
       console.error(deleteError);
@@ -43,7 +46,11 @@ export default function DeleteApiTokenButton({ apiTokenId }) {
 
   return (
     <>
-      <IconButton onClick={() => setDialogOpen(true)} size="small">
+      <IconButton
+        onClick={() => setDialogOpen(true)}
+        size="small"
+        data-test="delete-button"
+      >
         <DeleteIcon />
       </IconButton>
       <ConfirmationDialog
@@ -55,6 +62,7 @@ export default function DeleteApiTokenButton({ apiTokenId }) {
         cancelButtonChildren={formatMessage('deleteApiTokenButton.cancel')}
         confirmButtonChildren={formatMessage('deleteApiTokenButton.confirm')}
         errorMessage={errorText}
+        data-test="delete-api-token-modal"
       />
     </>
   );

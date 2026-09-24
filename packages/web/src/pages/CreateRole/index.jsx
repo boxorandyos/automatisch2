@@ -12,11 +12,15 @@ import Form from 'components/Form';
 import PageTitle from 'components/PageTitle';
 import TextField from 'components/TextField';
 import PermissionCatalogField from 'components/PermissionCatalogField';
-import computePermissions from 'helpers/computePermissions';
+import {
+  getComputedPermissionsDefaultValues,
+  getPermissions,
+} from 'helpers/computePermissions';
 import * as URLS from 'config/urls';
 import useAdminCreateRole from 'hooks/useAdminCreateRole';
 import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 import useFormatMessage from 'hooks/useFormatMessage';
+import usePermissionCatalog from 'hooks/usePermissionCatalog';
 
 const getValidationSchema = (formatMessage) =>
   yup.object().shape({
@@ -36,16 +40,32 @@ export default function CreateRole() {
   const navigate = useNavigate();
   const enqueueSnackbar = useEnqueueSnackbar();
   const { mutateAsync: createRole, isPending } = useAdminCreateRole();
+  const { data: permissionCatalogData, isLoading: isPermissionCatalogLoading } =
+    usePermissionCatalog();
+
+  const defaultValues = React.useMemo(
+    () => ({
+      name: '',
+      description: '',
+      computedPermissions: getComputedPermissionsDefaultValues(
+        permissionCatalogData?.data,
+      ),
+    }),
+    [permissionCatalogData],
+  );
 
   const handleSubmit = async (values) => {
     try {
       await createRole({
         name: values.name,
         description: values.description,
-        permissions: computePermissions(values.permissions),
+        permissions: getPermissions(values.computedPermissions),
       });
       enqueueSnackbar(formatMessage('createRole.successfullyCreated'), {
         variant: 'success',
+        SnackbarProps: {
+          'data-test': 'snackbar-create-role-success',
+        },
       });
       navigate(URLS.ROLES);
     } catch (error) {
@@ -63,40 +83,42 @@ export default function CreateRole() {
           </PageTitle>
         </Grid>
         <Grid item xs={12} sx={{ pt: 5 }}>
-          <Form
-            onSubmit={handleSubmit}
-            resolver={yupResolver(getValidationSchema(formatMessage))}
-            defaultValues={{ name: '', description: '', permissions: {} }}
-            render={({ formState: { errors } }) => (
-              <Stack direction="column" gap={2}>
-                <TextField
-                  required
-                  name="name"
-                  label={formatMessage('roleForm.name')}
-                  data-test="name-input"
-                  fullWidth
-                />
-                <TextField
-                  name="description"
-                  label={formatMessage('roleForm.description')}
-                  data-test="description-input"
-                  fullWidth
-                />
-                <PermissionCatalogField name="permissions" />
-                {errors?.root?.general && (
-                  <Alert severity="error">{errors.root.general.message}</Alert>
-                )}
-                <LoadingButton
-                  type="submit"
-                  variant="contained"
-                  loading={isPending}
-                  data-test="create-button"
-                >
-                  {formatMessage('createRole.submit')}
-                </LoadingButton>
-              </Stack>
-            )}
-          />
+          {!isPermissionCatalogLoading && (
+            <Form
+              onSubmit={handleSubmit}
+              resolver={yupResolver(getValidationSchema(formatMessage))}
+              defaultValues={defaultValues}
+              render={({ formState: { errors } }) => (
+                <Stack direction="column" gap={2}>
+                  <TextField
+                    required
+                    name="name"
+                    label={formatMessage('roleForm.name')}
+                    data-test="name-input"
+                    fullWidth
+                  />
+                  <TextField
+                    name="description"
+                    label={formatMessage('roleForm.description')}
+                    data-test="description-input"
+                    fullWidth
+                  />
+                  <PermissionCatalogField name="computedPermissions" />
+                  {errors?.root?.general && (
+                    <Alert severity="error">{errors.root.general.message}</Alert>
+                  )}
+                  <LoadingButton
+                    type="submit"
+                    variant="contained"
+                    loading={isPending}
+                    data-test="create-button"
+                  >
+                    {formatMessage('createRole.submit')}
+                  </LoadingButton>
+                </Stack>
+              )}
+            />
+          )}
         </Grid>
       </Grid>
     </Container>

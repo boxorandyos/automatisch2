@@ -33,7 +33,10 @@ export default function AdminApplications() {
         <Divider sx={{ mt: [2, 0], mb: 2 }} />
 
         {isLoading && (
-          <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />
+          <CircularProgress
+            data-test="apps-loader"
+            sx={{ display: 'block', margin: '20px auto' }}
+          />
         )}
 
         {!isLoading && !apps.length && (

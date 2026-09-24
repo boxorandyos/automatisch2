@@ -1,39 +1,79 @@
 /**
- * Convert the permission-catalog checkbox form shape into API permission rows.
+ * Convert role permission checkbox form values into API permission rows.
  *
- * Form shape:
- *   permissions[subject][action] = { isCreator?: boolean, all?: boolean }
+ * Form shape (per subject/action):
+ *   { ownEntities?: boolean, allEntities?: boolean }
  *
  * API shape:
  *   [{ action, subject, conditions: [] | ['isCreator'] }, ...]
  */
-export default function computePermissions(permissionsFieldValue = {}) {
-  const result = [];
+export function getPermissions(computedPermissions) {
+  if (!computedPermissions) return [];
 
-  Object.entries(permissionsFieldValue).forEach(([subject, actions]) => {
-    if (!actions || typeof actions !== 'object') {
-      return;
-    }
+  return Object.entries(computedPermissions).reduce(
+    (permissions, [subject, actionsWithConditions]) => {
+      for (const action in actionsWithConditions) {
+        const { ownEntities, allEntities } = actionsWithConditions[action];
 
-    Object.entries(actions).forEach(([action, flags]) => {
-      if (!flags) {
-        return;
+        if (ownEntities && !allEntities) {
+          permissions.push({
+            action,
+            subject,
+            conditions: ['isCreator'],
+          });
+        } else if (ownEntities && allEntities) {
+          permissions.push({
+            action,
+            subject,
+            conditions: [],
+          });
+        }
       }
 
-      if (flags.all) {
-        result.push({
-          action,
-          subject,
-          conditions: [],
-        });
-      }
+      return permissions;
+    },
+    [],
+  );
+}
 
-      if (flags.isCreator) {
-        result.push({
-          action,
-          subject,
-          conditions: ['isCreator'],
-        });
+export function getRoleWithComputedPermissions(role) {
+  if (!role) return {};
+
+  const computedPermissions = role.permissions?.reduce(
+    (computed, permission) => ({
+      ...computed,
+      [permission.subject]: {
+        ...(computed[permission.subject] || {}),
+        [permission.action]: {
+          allEntities: permission.conditions.includes('isCreator') === false,
+          ownEntities: true,
+        },
+      },
+    }),
+    {},
+  );
+
+  return {
+    ...role,
+    computedPermissions,
+  };
+}
+
+export function getComputedPermissionsDefaultValues(data) {
+  if (!data) return {};
+
+  const result = {};
+
+  data.subjects.forEach((subject) => {
+    const subjectKey = subject.key;
+    result[subjectKey] = {};
+
+    data.actions.forEach((action) => {
+      if (action.subjects.includes(subjectKey)) {
+        result[subjectKey][action.key] = {
+          ownEntities: false,
+          allEntities: false,
+        };
       }
     });
   });
@@ -41,29 +81,11 @@ export default function computePermissions(permissionsFieldValue = {}) {
   return result;
 }
 
-/**
- * Convert API permission rows into the checkbox form shape.
- */
+// Backwards-compatible aliases used by older call sites.
+export default function computePermissions(permissionsFieldValue) {
+  return getPermissions(permissionsFieldValue);
+}
+
 export function permissionsToFormValues(permissions = []) {
-  const values = {};
-
-  permissions.forEach((permission) => {
-    const { subject, action, conditions = [] } = permission;
-
-    if (!values[subject]) {
-      values[subject] = {};
-    }
-
-    if (!values[subject][action]) {
-      values[subject][action] = { isCreator: false, all: false };
-    }
-
-    if (conditions.includes('isCreator')) {
-      values[subject][action].isCreator = true;
-    } else {
-      values[subject][action].all = true;
-    }
-  });
-
-  return values;
+  return getRoleWithComputedPermissions({ permissions }).computedPermissions || {};
 }

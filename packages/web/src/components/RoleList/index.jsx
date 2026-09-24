@@ -79,7 +79,6 @@ export default function RoleList() {
                       component={Link}
                       to={URLS.ROLE(role.id)}
                       data-test="role-edit"
-                      disabled={role.isAdmin}
                     >
                       <EditIcon />
                     </IconButton>

@@ -4,14 +4,20 @@ import Crypto from 'crypto';
 import appConfig from '@/config/app.js';
 import Base from '@/models/base.js';
 import AccessToken from '@/models/access-token.js';
+import Agent from '@/models/agent.js';
 import Config from '@/models/config.js';
 import Connection from '@/models/connection.js';
 import Execution from '@/models/execution.js';
 import Flow from '@/models/flow.js';
 import Folder from '@/models/folder.js';
+import Form from '@/models/form.js';
+import Identity from '@/models/identity.js';
+import McpServer from '@/models/mcp-server.js';
 import Permission from '@/models/permission.js';
 import Role from '@/models/role.js';
 import Step from '@/models/step.js';
+import Subscription from '@/models/subscription.js';
+import UsageData from '@/models/usage-data.js';
 import User from '@/models/user.js';
 import deleteUserQueue from '@/queues/delete-user.js';
 import emailQueue from '@/queues/email.js';
@@ -91,6 +97,40 @@ describe('User model', () => {
             to: 'executions.flow_id',
           },
         },
+        usageData: {
+          relation: Base.HasManyRelation,
+          modelClass: UsageData,
+          join: {
+            from: 'usage_data.user_id',
+            to: 'users.id',
+          },
+        },
+        currentUsageData: {
+          relation: Base.HasOneRelation,
+          modelClass: UsageData,
+          join: {
+            from: 'usage_data.user_id',
+            to: 'users.id',
+          },
+          filter: expect.any(Function),
+        },
+        subscriptions: {
+          relation: Base.HasManyRelation,
+          modelClass: Subscription,
+          join: {
+            from: 'subscriptions.user_id',
+            to: 'users.id',
+          },
+        },
+        currentSubscription: {
+          relation: Base.HasOneRelation,
+          modelClass: Subscription,
+          join: {
+            from: 'subscriptions.user_id',
+            to: 'users.id',
+          },
+          filter: expect.any(Function),
+        },
         role: {
           relation: Base.HasOneRelation,
           modelClass: Role,
@@ -107,12 +147,44 @@ describe('User model', () => {
             to: 'permissions.role_id',
           },
         },
+        identities: {
+          relation: Base.HasManyRelation,
+          modelClass: Identity,
+          join: {
+            from: 'identities.user_id',
+            to: 'users.id',
+          },
+        },
         folders: {
           relation: Base.HasManyRelation,
           modelClass: Folder,
           join: {
             from: 'users.id',
             to: 'folders.user_id',
+          },
+        },
+        forms: {
+          relation: Base.HasManyRelation,
+          modelClass: Form,
+          join: {
+            from: 'users.id',
+            to: 'forms.user_id',
+          },
+        },
+        mcpServers: {
+          relation: Base.HasManyRelation,
+          modelClass: McpServer,
+          join: {
+            from: 'users.id',
+            to: 'mcp_servers.user_id',
+          },
+        },
+        agents: {
+          relation: Base.HasManyRelation,
+          modelClass: Agent,
+          join: {
+            from: 'users.id',
+            to: 'agents.user_id',
           },
         },
       };
@@ -822,10 +894,48 @@ describe('User model', () => {
   });
 
   describe('isAllowedToRunFlows', () => {
-    it('should return true', async () => {
+    it('should return true when Automatisch is self hosted', async () => {
       const user = new User();
 
+      vi.spyOn(appConfig, 'isSelfHosted', 'get').mockReturnValue(true);
+
       expect(await user.isAllowedToRunFlows()).toBe(true);
+    });
+
+    it('should return true when the user is in trial', async () => {
+      const user = new User();
+
+      vi.spyOn(user, 'inTrial').mockResolvedValue(true);
+
+      expect(await user.isAllowedToRunFlows()).toBe(true);
+    });
+
+    it('should return true when the user has active subscription and within quota limits', async () => {
+      const user = new User();
+
+      vi.spyOn(user, 'hasActiveSubscription').mockResolvedValue(true);
+      vi.spyOn(user, 'withinLimits').mockResolvedValue(true);
+
+      expect(await user.isAllowedToRunFlows()).toBe(true);
+    });
+
+    it('should return false when the user has active subscription over quota limits', async () => {
+      const user = new User();
+
+      vi.spyOn(user, 'hasActiveSubscription').mockResolvedValue(true);
+      vi.spyOn(user, 'withinLimits').mockResolvedValue(false);
+
+      expect(await user.isAllowedToRunFlows()).toBe(false);
+    });
+
+    it('should return false otherwise', async () => {
+      const user = new User();
+
+      vi.spyOn(appConfig, 'isSelfHosted', 'get').mockReturnValue(false);
+      vi.spyOn(user, 'inTrial').mockResolvedValue(false);
+      vi.spyOn(user, 'hasActiveSubscription').mockResolvedValue(false);
+
+      expect(await user.isAllowedToRunFlows()).toBe(false);
     });
   });
 

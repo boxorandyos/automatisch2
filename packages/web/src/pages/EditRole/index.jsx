@@ -13,8 +13,9 @@ import Form from 'components/Form';
 import PageTitle from 'components/PageTitle';
 import TextField from 'components/TextField';
 import PermissionCatalogField from 'components/PermissionCatalogField';
-import computePermissions, {
-  permissionsToFormValues,
+import {
+  getPermissions,
+  getRoleWithComputedPermissions,
 } from 'helpers/computePermissions';
 import * as URLS from 'config/urls';
 import useAdminUpdateRole from 'hooks/useAdminUpdateRole';
@@ -43,16 +44,20 @@ export default function EditRole() {
   const { data, isLoading } = useRole(roleId);
   const role = data?.data;
   const { mutateAsync: updateRole, isPending } = useAdminUpdateRole(roleId);
+  const roleWithPermissions = getRoleWithComputedPermissions(role);
 
   const handleSubmit = async (values) => {
     try {
       await updateRole({
         name: values.name,
         description: values.description,
-        permissions: computePermissions(values.permissions),
+        permissions: getPermissions(values.computedPermissions),
       });
       enqueueSnackbar(formatMessage('editRole.successfullyUpdated'), {
         variant: 'success',
+        SnackbarProps: {
+          'data-test': 'snackbar-edit-role-success',
+        },
       });
       navigate(URLS.ROLES);
     } catch (error) {
@@ -65,7 +70,9 @@ export default function EditRole() {
     <Container sx={{ py: 3, display: 'flex', justifyContent: 'center' }}>
       <Grid container item xs={12} sm={10} md={9}>
         <Grid item xs={12} sx={{ mb: [2, 5] }}>
-          <PageTitle>{formatMessage('editRolePage.title')}</PageTitle>
+          <PageTitle data-test="edit-role-title">
+            {formatMessage('editRolePage.title')}
+          </PageTitle>
         </Grid>
         <Grid item xs={12} sx={{ pt: 5 }}>
           {isLoading && (
@@ -80,9 +87,10 @@ export default function EditRole() {
               onSubmit={handleSubmit}
               resolver={yupResolver(getValidationSchema(formatMessage))}
               defaultValues={{
-                name: role.name,
-                description: role.description || '',
-                permissions: permissionsToFormValues(role.permissions || []),
+                name: roleWithPermissions.name,
+                description: roleWithPermissions.description || '',
+                computedPermissions:
+                  roleWithPermissions.computedPermissions || {},
               }}
               render={({ formState: { errors } }) => (
                 <Stack direction="column" gap={2}>
@@ -97,7 +105,7 @@ export default function EditRole() {
                     label={formatMessage('roleForm.description')}
                     fullWidth
                   />
-                  <PermissionCatalogField name="permissions" />
+                  <PermissionCatalogField name="computedPermissions" />
                   {errors?.root?.general && (
                     <Alert severity="error">{errors.root.general.message}</Alert>
                   )}
@@ -105,6 +113,7 @@ export default function EditRole() {
                     type="submit"
                     variant="contained"
                     loading={isPending}
+                    data-test="update-button"
                   >
                     {formatMessage('editRole.submit')}
                   </LoadingButton>

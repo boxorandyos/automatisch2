@@ -1,123 +1,118 @@
-import * as React from 'react';
+import Paper from '@mui/material/Paper';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Typography from '@mui/material/Typography';
 import PropTypes from 'prop-types';
-import {
-  Checkbox,
-  FormControlLabel,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-  Skeleton,
-} from '@mui/material';
-import { Controller, useFormContext } from 'react-hook-form';
+import * as React from 'react';
 
 import useFormatMessage from 'hooks/useFormatMessage';
 import usePermissionCatalog from 'hooks/usePermissionCatalog';
+import AllEntitiesPermissions from './AllEntitiesPermissions';
+import OwnEntitiesPermission from './OwnEntitiesPermission';
 
-function PermissionCheckbox({ name, label, dataTest }) {
-  const { control } = useFormContext();
-
-  return (
-    <Controller
-      name={name}
-      control={control}
-      defaultValue={false}
-      render={({ field: { value, onChange, ...field } }) => (
-        <FormControlLabel
-          control={
-            <Checkbox
-              {...field}
-              checked={!!value}
-              onChange={(event) => onChange(event.target.checked)}
-              data-test={dataTest}
-            />
-          }
-          label={label}
-        />
-      )}
-    />
-  );
-}
-
-PermissionCheckbox.propTypes = {
-  name: PropTypes.string.isRequired,
-  label: PropTypes.node,
-  dataTest: PropTypes.string,
-};
-
-export default function PermissionCatalogField({ name = 'permissions' }) {
+export default function PermissionCatalogField({
+  name = 'permissions',
+  disabled = false,
+  loading = false,
+}) {
   const formatMessage = useFormatMessage();
   const { data, isLoading } = usePermissionCatalog();
-  const catalog = data?.data || data;
+  const permissionCatalog = data?.data;
 
-  if (isLoading || !catalog) {
+  if (isLoading || loading || !permissionCatalog) {
     return (
-      <Stack gap={1} data-test="permissions-catalog">
-        <Skeleton variant="rounded" height={40} />
-        <Skeleton variant="rounded" height={120} />
-      </Stack>
+      <TableContainer data-test="permissions-catalog" component={Paper}>
+        <Table>
+          <TableBody>
+            <TableRow>
+              <TableCell>
+                <Typography variant="body2">…</Typography>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
     );
   }
 
-  const subjects = catalog.subjects || [];
-  const actions = catalog.actions || [];
-
   return (
-    <TableContainer component={Paper} data-test="permissions-catalog">
-      <Table size="small">
+    <TableContainer data-test="permissions-catalog" component={Paper}>
+      <Table>
         <TableHead>
           <TableRow>
-            <TableCell>
-              <Typography variant="subtitle2">Subject</Typography>
-            </TableCell>
-            {actions.map((action) => (
-              <TableCell key={action.key} align="center">
-                <Typography variant="subtitle2">{action.label}</Typography>
-              </TableCell>
+            <TableCell component="th" />
+            {permissionCatalog.actions.map((action) => (
+              <React.Fragment key={action.key}>
+                <TableCell component="th">
+                  <Typography
+                    component="div"
+                    variant="subtitle2"
+                    align="center"
+                    sx={{ color: 'text.secondary', fontWeight: 700 }}
+                  >
+                    {action.label}{' '}
+                    {formatMessage('permissionCatalogField.ownEntitiesLabel')}
+                  </Typography>
+                </TableCell>
+                <TableCell component="th">
+                  <Typography
+                    component="div"
+                    variant="subtitle2"
+                    align="center"
+                    sx={{ color: 'text.secondary', fontWeight: 700 }}
+                  >
+                    {action.label}{' '}
+                    {formatMessage('permissionCatalogField.allEntitiesLabel')}
+                  </Typography>
+                </TableCell>
+              </React.Fragment>
             ))}
           </TableRow>
         </TableHead>
         <TableBody>
-          {subjects.map((subject) => (
+          {permissionCatalog.subjects.map((subject) => (
             <TableRow
               key={subject.key}
+              sx={{ '&:last-child td': { border: 0 } }}
               data-test={`${subject.key}-permission-row`}
             >
-              <TableCell>
-                <Typography variant="body2">{subject.label}</Typography>
+              <TableCell scope="row">
+                <Typography variant="subtitle2" component="div">
+                  {subject.label}
+                </Typography>
               </TableCell>
-              {actions.map((action) => {
-                const applicable = action.subjects?.includes(subject.key);
-                if (!applicable) {
-                  return <TableCell key={action.key} />;
-                }
-
-                return (
-                  <TableCell key={action.key} align="center">
-                    <Stack>
-                      <PermissionCheckbox
-                        name={`${name}.${subject.key}.${action.key}.isCreator`}
-                        label={formatMessage(
-                          'permissionCatalogField.ownEntitiesLabel',
-                        )}
-                        dataTest={`isCreator-${action.key}-checkbox`}
+              {permissionCatalog.actions.map((action) => (
+                <React.Fragment key={`${subject.key}.${action.key}`}>
+                  <TableCell align="center">
+                    {action.subjects.includes(subject.key) ? (
+                      <OwnEntitiesPermission
+                        action={action}
+                        subject={subject}
+                        disabled={disabled}
+                        name={name}
                       />
-                      <PermissionCheckbox
-                        name={`${name}.${subject.key}.${action.key}.all`}
-                        label={formatMessage(
-                          'permissionCatalogField.allEntitiesLabel',
-                        )}
-                        dataTest={`${action.key}-checkbox`}
-                      />
-                    </Stack>
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
-                );
-              })}
+                  <TableCell align="center">
+                    {action.subjects.includes(subject.key) ? (
+                      <AllEntitiesPermissions
+                        action={action}
+                        subject={subject}
+                        disabled={disabled}
+                        name={name}
+                      />
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                </React.Fragment>
+              ))}
             </TableRow>
           ))}
         </TableBody>
@@ -128,4 +123,6 @@ export default function PermissionCatalogField({ name = 'permissions' }) {
 
 PermissionCatalogField.propTypes = {
   name: PropTypes.string,
+  disabled: PropTypes.bool,
+  loading: PropTypes.bool,
 };

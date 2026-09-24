@@ -21,7 +21,12 @@ export default function AdminApiTokens() {
 
   const handleCreate = async () => {
     const response = await createToken();
-    setCreatedToken(response?.data?.token || response?.data?.fullToken);
+    setCreatedToken(
+      response?.data?.token ||
+        response?.data?.fullToken ||
+        response?.token ||
+        response?.fullToken,
+    );
   };
 
   return (
@@ -29,7 +34,9 @@ export default function AdminApiTokens() {
       <Grid container item xs={12} sm={10} md={9}>
         <Grid container sx={{ mb: [0, 3] }} columnSpacing={1.5} rowSpacing={3}>
           <Grid container item xs sm alignItems="center">
-            <PageTitle>{formatMessage('adminApiTokensPage.title')}</PageTitle>
+            <PageTitle data-test="admin-api-tokens-page-title">
+              {formatMessage('adminApiTokensPage.title')}
+            </PageTitle>
           </Grid>
           <Grid container item xs="auto" alignItems="center">
             <LoadingButton
@@ -37,6 +44,7 @@ export default function AdminApiTokens() {
               startIcon={<AddIcon />}
               onClick={handleCreate}
               loading={isPending}
+              data-test="create-token-button"
             >
               {formatMessage('adminApiTokensPage.createApiToken')}
             </LoadingButton>
@@ -44,15 +52,17 @@ export default function AdminApiTokens() {
         </Grid>
 
         {!isLoading && !tokens.length ? (
-          <NoResultFound text={formatMessage('adminApiTokensPage.noApiTokens')} />
+          <NoResultFound
+            text={formatMessage('adminApiTokensPage.noApiTokens')}
+          />
         ) : (
-          <ApiTokenList />
+          <ApiTokenList loading={isLoading} apiTokens={tokens} />
         )}
       </Grid>
 
       <CreatedApiTokenDialog
         open={!!createdToken}
-        token={createdToken}
+        apiToken={createdToken}
         onClose={() => setCreatedToken(null)}
       />
     </Container>

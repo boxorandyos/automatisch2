@@ -73,6 +73,7 @@ export default function UserInterface() {
                     'userInterfacePage.primaryMainColorFieldLabel',
                   )}
                   fullWidth
+                  data-test="primary-main-color-input"
                 />
                 <ColorInput
                   name="palettePrimaryDark"
@@ -80,6 +81,7 @@ export default function UserInterface() {
                     'userInterfacePage.primaryDarkColorFieldLabel',
                   )}
                   fullWidth
+                  data-test="primary-dark-color-input"
                 />
                 <ColorInput
                   name="palettePrimaryLight"
@@ -87,6 +89,7 @@ export default function UserInterface() {
                     'userInterfacePage.primaryLightColorFieldLabel',
                   )}
                   fullWidth
+                  data-test="primary-light-color-input"
                 />
                 <TextField
                   name="logoSvgData"
@@ -94,6 +97,7 @@ export default function UserInterface() {
                   fullWidth
                   multiline
                   minRows={3}
+                  data-test="logo-svg-data-text-field"
                 />
 
                 <Typography variant="h6">
@@ -111,6 +115,7 @@ export default function UserInterface() {
                   fullWidth
                   multiline
                   minRows={2}
+                  data-test="footer-logo-svg-data-text-field"
                 />
                 <TextField
                   name="footerCopyrightText"
@@ -118,11 +123,7 @@ export default function UserInterface() {
                     'userInterfacePage.footerCopyrightTextFieldLabel',
                   )}
                   fullWidth
-                />
-                <ColorInput
-                  name="footerTextColor"
-                  label={formatMessage('userInterfacePage.footerTextColorLabel')}
-                  fullWidth
+                  data-test="footer-copyright-text-field"
                 />
                 <ColorInput
                   name="footerBackgroundColor"
@@ -130,16 +131,25 @@ export default function UserInterface() {
                     'userInterfacePage.footerBackgroundColorLabel',
                   )}
                   fullWidth
+                  data-test="footer-background-color-input"
+                />
+                <ColorInput
+                  name="footerTextColor"
+                  label={formatMessage('userInterfacePage.footerTextColorLabel')}
+                  fullWidth
+                  data-test="footer-text-color-input"
                 />
                 <TextField
                   name="footerDocsUrl"
                   label={formatMessage('userInterfacePage.footerDocsUrlLabel')}
                   fullWidth
+                  data-test="logo-docs-text-field"
                 />
                 <TextField
                   name="footerTosUrl"
                   label={formatMessage('userInterfacePage.footerTosUrlLabel')}
                   fullWidth
+                  data-test="logo-tos-url-text-field"
                 />
                 <TextField
                   name="footerPrivacyPolicyUrl"
@@ -147,6 +157,7 @@ export default function UserInterface() {
                     'userInterfacePage.footerPrivacyPolicyUrlLabel',
                   )}
                   fullWidth
+                  data-test="logo-privacy-policy-url-text-field"
                 />
                 <TextField
                   name="footerImprintUrl"
@@ -154,10 +165,14 @@ export default function UserInterface() {
                     'userInterfacePage.footerImprintUrlLabel',
                   )}
                   fullWidth
+                  data-test="logo-imprint-url-text-field"
                 />
 
                 {success && (
-                  <Alert severity="success">
+                  <Alert
+                    severity="success"
+                    data-test="snackbar-update-user-interface-success"
+                  >
                     {formatMessage('userInterfacePage.successfullyUpdated')}
                   </Alert>
                 )}
@@ -166,6 +181,7 @@ export default function UserInterface() {
                   type="submit"
                   variant="contained"
                   loading={isPending}
+                  data-test="update-button"
                 >
                   {formatMessage('userInterfacePage.submit')}
                 </LoadingButton>

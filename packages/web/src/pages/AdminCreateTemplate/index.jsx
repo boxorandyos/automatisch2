@@ -40,11 +40,13 @@ export default function AdminCreateTemplate() {
                   label={formatMessage('adminCreateTemplate.titleFieldLabel')}
                   fullWidth
                   required
+                  data-test="template-name-input"
                 />
                 <LoadingButton
                   type="submit"
                   variant="contained"
                   loading={isPending}
+                  data-test="create-button"
                 >
                   {formatMessage('adminCreateTemplate.submit')}
                 </LoadingButton>

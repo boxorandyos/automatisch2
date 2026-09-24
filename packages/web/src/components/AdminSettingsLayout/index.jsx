@@ -70,7 +70,7 @@ function createDrawerLinks({ isCurrentUserAdmin }) {
           Icon: AppsIcon,
           primary: 'adminSettingsDrawer.apps',
           to: URLS.ADMIN_APPS,
-          dataTest: 'admin-apps-drawer-link',
+          dataTest: 'apps-drawer-link',
         }
       : null,
     isCurrentUserAdmin

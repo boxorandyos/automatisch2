@@ -1,4 +1,5 @@
 import LoadingButton from '@mui/lab/LoadingButton';
+import Alert from '@mui/material/Alert';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import * as React from 'react';
@@ -19,8 +20,11 @@ export default function AdminUpdateTemplate() {
   const navigate = useNavigate();
   const { data, isLoading } = useAdminTemplate(templateId);
   const template = data?.data;
-  const { mutateAsync: updateTemplate, isPending } =
-    useAdminUpdateTemplate(templateId);
+  const {
+    mutateAsync: updateTemplate,
+    isPending,
+    error,
+  } = useAdminUpdateTemplate(templateId);
 
   if (isLoading || !template) {
     return null;
@@ -48,14 +52,22 @@ export default function AdminUpdateTemplate() {
                   label={formatMessage('adminUpdateTemplate.titleFieldLabel')}
                   fullWidth
                   required
+                  data-test="template-name-input"
                 />
                 <LoadingButton
                   type="submit"
                   variant="contained"
                   loading={isPending}
+                  data-test="update-button"
                 >
                   {formatMessage('adminUpdateTemplate.submit')}
                 </LoadingButton>
+                {error && (
+                  <Alert severity="error" sx={{ mt: 3 }} data-test="update-alert">
+                    {error?.response?.data?.errors?.general?.[0] ||
+                      error.message}
+                  </Alert>
+                )}
               </Stack>
             )}
           />

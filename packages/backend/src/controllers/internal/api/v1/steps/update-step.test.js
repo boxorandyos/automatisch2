@@ -1,9 +1,8 @@
-import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { describe, it, beforeEach, expect } from 'vitest';
 import request from 'supertest';
 import Crypto from 'crypto';
 import app from '../../../../../app.js';
 import createAuthTokenByUserId from '@/helpers/create-auth-token-by-user-id.js';
-import Step from '@/models/step.js';
 import { createUser } from '@/factories/user.js';
 import { createConnection } from '@/factories/connection.js';
 import { createFlow } from '@/factories/flow.js';
