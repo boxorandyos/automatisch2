@@ -20,7 +20,11 @@ export default function TemplateItem({ template }) {
   };
 
   return (
-    <ListItemButton onClick={handleClick} disabled={isPending}>
+    <ListItemButton
+      onClick={handleClick}
+      disabled={isPending}
+      data-test="template-row"
+    >
       <ListItemText primary={template.name} />
     </ListItemButton>
   );
