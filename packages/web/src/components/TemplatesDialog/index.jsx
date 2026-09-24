@@ -25,7 +25,7 @@ export default function TemplatesDialog() {
   const onClose = () => navigate(URLS.FLOWS);
 
   return (
-    <Dialog open onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open onClose={onClose} fullWidth maxWidth="sm" data-test="templates-dialog">
       <DialogTitle>{formatMessage('templatesDialog.title')}</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>

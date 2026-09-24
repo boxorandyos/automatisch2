@@ -48,7 +48,7 @@ export default function AdminApplications() {
             <AppRow
               key={app.key}
               application={app}
-              url={URLS.ADMIN_APP(app.key)}
+              url={URLS.ADMIN_APP_SETTINGS(app.key)}
             />
           ))}
       </Container>

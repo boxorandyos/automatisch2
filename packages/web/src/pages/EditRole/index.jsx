@@ -55,6 +55,7 @@ export default function EditRole() {
       });
       enqueueSnackbar(formatMessage('editRole.successfullyUpdated'), {
         variant: 'success',
+        persist: true,
         SnackbarProps: {
           'data-test': 'snackbar-edit-role-success',
         },
@@ -98,11 +99,13 @@ export default function EditRole() {
                     required
                     name="name"
                     label={formatMessage('roleForm.name')}
+                    data-test="name-input"
                     fullWidth
                   />
                   <TextField
                     name="description"
                     label={formatMessage('roleForm.description')}
+                    data-test="description-input"
                     fullWidth
                   />
                   <PermissionCatalogField name="computedPermissions" />

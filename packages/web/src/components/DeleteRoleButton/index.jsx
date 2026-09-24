@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { useCallback, useState } from 'react';
 
 import ConfirmationDialog from 'components/ConfirmationDialog';
-import { getGeneralErrorMessage } from 'helpers/errors';
+import { getFieldErrorMessage, getGeneralErrorMessage } from 'helpers/errors';
 import useAdminDeleteRole from 'hooks/useAdminDeleteRole';
 import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 import useFormatMessage from 'hooks/useFormatMessage';
@@ -20,7 +20,12 @@ export default function DeleteRoleButton({ roleId, disabled = false }) {
     reset,
   } = useAdminDeleteRole(roleId);
 
-  const errorText = getGeneralErrorMessage({
+  const roleErrorMessage = getFieldErrorMessage({
+    fieldName: 'role',
+    error,
+  });
+
+  const generalErrorMessage = getGeneralErrorMessage({
     error,
     fallbackMessage: formatMessage('deleteRoleButton.generalError'),
   });
@@ -61,7 +66,7 @@ export default function DeleteRoleButton({ roleId, disabled = false }) {
         confirmButtonChildren={formatMessage('deleteRoleButton.confirm')}
         data-test="delete-role-modal"
         description={formatMessage('deleteRoleButton.description')}
-        errorMessage={errorText}
+        errorMessage={roleErrorMessage || generalErrorMessage}
         onClose={closeDialog}
         onConfirm={confirmDeletion}
         open={dialogOpen}

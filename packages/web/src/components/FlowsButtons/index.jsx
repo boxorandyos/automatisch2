@@ -22,7 +22,7 @@ export default function FlowsButtons() {
   const matchSmallScreens = useMediaQuery(theme.breakpoints.down('md'));
   const canCreateFlow = currentUserAbility.can('manage', 'Flow');
   const { data: configData } = useAutomatischConfig();
-  const enableTemplates = configData?.data?.enableTemplates;
+  const enableTemplates = configData?.data?.enableTemplates === true;
 
   const createFlowButtonData = {
     label: formatMessage('flows.createFlow'),
@@ -36,6 +36,7 @@ export default function FlowsButtons() {
     label: formatMessage('flows.createFlowFromTemplate'),
     key: 'createFlowFromTemplate',
     'data-test': 'create-flow-from-template-button',
+    hide: !enableTemplates,
     to: URLS.VIEW_TEMPLATES,
     startIcon: <LibraryBooksIcon />,
   };
@@ -50,14 +51,12 @@ export default function FlowsButtons() {
   if (matchSmallScreens) {
     const connectionOptions = [
       createFlowButtonData,
-      ...(enableTemplates ? [createFromTemplateButtonData] : []),
+      createFromTemplateButtonData,
       importFlowButtonData,
-    ];
+    ].filter((option) => !option.hide);
 
     return (
-      <>
-        <SplitButton disabled={!canCreateFlow} options={connectionOptions} />
-      </>
+      <SplitButton disabled={!canCreateFlow} options={connectionOptions} />
     );
   }
 
@@ -77,35 +76,12 @@ export default function FlowsButtons() {
         {formatMessage('flows.importFlow')}
       </Button>
 
-      {enableTemplates && (
-        <Button
-          type="submit"
-          variant="outlined"
-          color="info"
-          size="large"
-          component={Link}
-          disabled={!canCreateFlow}
-          startIcon={<LibraryBooksIcon />}
-          to={URLS.VIEW_TEMPLATES}
-          data-test="create-flow-from-template-button"
-        >
-          {formatMessage('flows.createFlowFromTemplate')}
-        </Button>
-      )}
-
-      <Button
-        type="submit"
-        variant="contained"
-        color="primary"
-        size="large"
-        component={Link}
+      <SplitButton
         disabled={!canCreateFlow}
-        startIcon={<AddIcon />}
-        to={URLS.CREATE_FLOW}
-        data-test="create-flow-button"
-      >
-        {formatMessage('flows.createFlow')}
-      </Button>
+        options={[createFlowButtonData, createFromTemplateButtonData].filter(
+          (option) => !option.hide,
+        )}
+      />
     </>
   );
 }

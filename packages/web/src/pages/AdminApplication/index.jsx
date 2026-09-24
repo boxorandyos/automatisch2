@@ -101,7 +101,7 @@ export default function AdminApplication() {
             element={<AdminUpdateOAuthClient appKey={appKey} />}
           />
           <Route
-            path="/"
+            index
             element={<Navigate to={URLS.ADMIN_APP_SETTINGS(appKey)} replace />}
           />
         </Routes>

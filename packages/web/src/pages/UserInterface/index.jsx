@@ -3,6 +3,7 @@ import Alert from '@mui/material/Alert';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import mergeWith from 'lodash/mergeWith';
 import * as React from 'react';
 
 import ColorInput from 'components/ColorInput';
@@ -13,19 +14,80 @@ import Switch from 'components/Switch';
 import TextField from 'components/TextField';
 import useAdminUpdateConfig from 'hooks/useAdminUpdateConfig';
 import useAutomatischConfig from 'hooks/useAutomatischConfig';
+import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 import useFormatMessage from 'hooks/useFormatMessage';
+import {
+  primaryDarkColor,
+  primaryLightColor,
+  primaryMainColor,
+} from 'styles/theme';
+
+const getPrimaryMainColor = (color) => color || primaryMainColor;
+const getPrimaryDarkColor = (color) => color || primaryDarkColor;
+const getPrimaryLightColor = (color) => color || primaryLightColor;
+
+const defaultValues = {
+  title: 'Automatisch',
+  palettePrimaryMain: primaryMainColor,
+  palettePrimaryDark: primaryDarkColor,
+  palettePrimaryLight: primaryLightColor,
+  logoSvgData: '',
+  enableFooter: false,
+  footerLogoSvgData: '',
+  footerCopyrightText: '',
+  footerBackgroundColor: '#FFFFFF',
+  footerTextColor: '#000000',
+  footerDocsUrl: '',
+  footerTosUrl: '',
+  footerPrivacyPolicyUrl: '',
+  footerImprintUrl: '',
+};
+
+const mergeIfGiven = (oldValue, newValue) => {
+  if (newValue) {
+    return newValue;
+  }
+
+  return oldValue;
+};
 
 export default function UserInterface() {
   const formatMessage = useFormatMessage();
   const { data, isLoading } = useAutomatischConfig();
   const config = data?.data || {};
   const { mutateAsync: updateConfig, isPending } = useAdminUpdateConfig();
-  const [success, setSuccess] = React.useState(false);
+  const enqueueSnackbar = useEnqueueSnackbar();
+  const configWithDefaults = mergeWith(defaultValues, config, mergeIfGiven);
 
-  const handleSubmit = async (values) => {
-    setSuccess(false);
-    await updateConfig(values);
-    setSuccess(true);
+  const handleSubmit = async (uiData) => {
+    try {
+      await updateConfig({
+        enableFooter: uiData.enableFooter,
+        footerBackgroundColor: uiData.footerBackgroundColor,
+        footerCopyrightText: uiData.footerCopyrightText,
+        footerDocsUrl: uiData.footerDocsUrl,
+        footerImprintUrl: uiData.footerImprintUrl,
+        footerLogoSvgData: uiData.footerLogoSvgData,
+        footerPrivacyPolicyUrl: uiData.footerPrivacyPolicyUrl,
+        footerTextColor: uiData.footerTextColor,
+        footerTosUrl: uiData.footerTosUrl,
+        logoSvgData: uiData.logoSvgData,
+        palettePrimaryDark: getPrimaryDarkColor(uiData.palettePrimaryDark),
+        palettePrimaryLight: getPrimaryLightColor(uiData.palettePrimaryLight),
+        palettePrimaryMain: getPrimaryMainColor(uiData.palettePrimaryMain),
+        title: uiData.title,
+      });
+
+      enqueueSnackbar(formatMessage('userInterfacePage.successfullyUpdated'), {
+        variant: 'success',
+        SnackbarProps: {
+          'data-test': 'snackbar-update-user-interface-success',
+        },
+      });
+    } catch (error) {
+      const errors = error?.response?.data?.errors;
+      throw errors || error;
+    }
   };
 
   if (isLoading) {
@@ -41,22 +103,7 @@ export default function UserInterface() {
         <Grid item xs={12}>
           <Form
             onSubmit={handleSubmit}
-            defaultValues={{
-              title: config.title || '',
-              palettePrimaryMain: config.palettePrimaryMain || '',
-              palettePrimaryDark: config.palettePrimaryDark || '',
-              palettePrimaryLight: config.palettePrimaryLight || '',
-              logoSvgData: config.logoSvgData || '',
-              enableFooter: !!config.enableFooter,
-              footerLogoSvgData: config.footerLogoSvgData || '',
-              footerCopyrightText: config.footerCopyrightText || '',
-              footerBackgroundColor: config.footerBackgroundColor || '',
-              footerTextColor: config.footerTextColor || '',
-              footerDocsUrl: config.footerDocsUrl || '',
-              footerTosUrl: config.footerTosUrl || '',
-              footerPrivacyPolicyUrl: config.footerPrivacyPolicyUrl || '',
-              footerImprintUrl: config.footerImprintUrl || '',
-            }}
+            defaultValues={configWithDefaults}
             render={() => (
               <Stack gap={3}>
                 <Typography variant="h6">
@@ -167,15 +214,6 @@ export default function UserInterface() {
                   fullWidth
                   data-test="logo-imprint-url-text-field"
                 />
-
-                {success && (
-                  <Alert
-                    severity="success"
-                    data-test="snackbar-update-user-interface-success"
-                  >
-                    {formatMessage('userInterfacePage.successfullyUpdated')}
-                  </Alert>
-                )}
 
                 <LoadingButton
                   type="submit"

@@ -63,6 +63,7 @@ export default function CreateRole() {
       });
       enqueueSnackbar(formatMessage('createRole.successfullyCreated'), {
         variant: 'success',
+        persist: true,
         SnackbarProps: {
           'data-test': 'snackbar-create-role-success',
         },
