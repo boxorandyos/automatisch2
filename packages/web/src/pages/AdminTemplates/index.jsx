@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import {
   Box,
   CircularProgress,
+  Divider,
   IconButton,
   List,
   ListItem,
@@ -15,11 +16,15 @@ import MenuItem from '@mui/material/MenuItem';
 import { Link } from 'react-router-dom';
 
 import Container from 'components/Container';
+import Form from 'components/Form';
 import NoResultFound from 'components/NoResultFound';
 import PageTitle from 'components/PageTitle';
+import Switch from 'components/Switch';
 import * as URLS from 'config/urls';
 import useAdminDeleteTemplate from 'hooks/useAdminDeleteTemplate';
 import useAdminTemplates from 'hooks/useAdminTemplates';
+import useAdminUpdateConfig from 'hooks/useAdminUpdateConfig';
+import useAutomatischConfig from 'hooks/useAutomatischConfig';
 import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 import useFormatMessage from 'hooks/useFormatMessage';
 
@@ -39,7 +44,11 @@ function TemplateContextMenu({ templateId, anchorEl, onClose }) {
 
   return (
     <Menu open={!!anchorEl} anchorEl={anchorEl} onClose={onClose}>
-      <MenuItem component={Link} to={URLS.ADMIN_UPDATE_TEMPLATE(templateId)} onClick={onClose}>
+      <MenuItem
+        component={Link}
+        to={URLS.ADMIN_UPDATE_TEMPLATE(templateId)}
+        onClick={onClose}
+      >
         Edit
       </MenuItem>
       <MenuItem onClick={handleDelete}>
@@ -56,14 +65,21 @@ TemplateContextMenu.propTypes = {
 };
 
 export default function AdminTemplates() {
-
   const formatMessage = useFormatMessage();
   const { data, isLoading } = useAdminTemplates();
   const templates = data?.data || [];
+  const { data: configData, isLoading: isConfigLoading } =
+    useAutomatischConfig();
+  const { mutateAsync: updateConfig, isPending: isUpdateConfigPending } =
+    useAdminUpdateConfig();
   const [menuState, setMenuState] = React.useState({
     anchorEl: null,
     templateId: null,
   });
+
+  const handleEnableTemplatesChange = async (event) => {
+    await updateConfig({ enableTemplates: event.target.checked });
+  };
 
   return (
     <Box sx={{ py: 3 }}>
@@ -71,6 +87,28 @@ export default function AdminTemplates() {
         <PageTitle sx={{ mb: 3 }}>
           {formatMessage('adminTemplatesPage.title')}
         </PageTitle>
+
+        <Divider sx={{ mb: 2 }} />
+
+        {!isConfigLoading && (
+          <Box sx={{ mb: 3 }}>
+            <Form
+              defaultValues={{
+                enableTemplates: !!configData?.data?.enableTemplates,
+              }}
+              noValidate
+              automaticValidation={false}
+              render={() => (
+                <Switch
+                  name="enableTemplates"
+                  disabled={isUpdateConfigPending}
+                  onChange={handleEnableTemplatesChange}
+                  label={formatMessage('authenticationForm.active')}
+                />
+              )}
+            />
+          </Box>
+        )}
 
         {isLoading && (
           <CircularProgress sx={{ display: 'block', m: '20px auto' }} />

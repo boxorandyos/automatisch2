@@ -2,17 +2,24 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
+import MuiTextField from '@mui/material/TextField';
 import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import Container from 'components/Container';
+import ControlledAutocomplete from 'components/ControlledAutocomplete';
 import Form from 'components/Form';
 import PageTitle from 'components/PageTitle';
 import TextField from 'components/TextField';
 import useFormatMessage from 'hooks/useFormatMessage';
+import useRoles from 'hooks/useRoles';
 import useAdminCreateUser from 'hooks/useAdminCreateUser';
+
+function generateRoleOptions(roles) {
+  return roles?.map(({ name: label, id: value }) => ({ label, value }));
+}
 
 const getValidationSchema = (formatMessage) => {
   const getMandatoryFieldMessage = (fieldTranslationId) =>
@@ -30,12 +37,14 @@ const getValidationSchema = (formatMessage) => {
       .trim()
       .email(formatMessage('userForm.validateEmail'))
       .required(getMandatoryFieldMessage('userForm.email')),
+    roleId: yup.string().required(getMandatoryFieldMessage('userForm.role')),
   });
 };
 
 const defaultValues = {
   fullName: '',
   email: '',
+  roleId: '',
 };
 
 export default function CreateUser() {
@@ -46,6 +55,8 @@ export default function CreateUser() {
     data: createdUser,
     isSuccess: createUserSuccess,
   } = useAdminCreateUser();
+  const { data: rolesData, isLoading: isRolesLoading } = useRoles();
+  const roles = rolesData?.data;
   const queryClient = useQueryClient();
 
   const handleUserCreation = async (userData) => {
@@ -53,6 +64,7 @@ export default function CreateUser() {
       await createUser({
         fullName: userData.fullName,
         email: userData.email,
+        roleId: userData.roleId,
       });
 
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
@@ -82,7 +94,7 @@ export default function CreateUser() {
             render={({ formState: { errors } }) => (
               <Stack direction="column" gap={2}>
                 <TextField
-                  required={true}
+                  required
                   name="fullName"
                   label={formatMessage('userForm.fullName')}
                   data-test="full-name-input"
@@ -92,7 +104,7 @@ export default function CreateUser() {
                 />
 
                 <TextField
-                  required={true}
+                  required
                   name="email"
                   label={formatMessage('userForm.email')}
                   data-test="email-input"
@@ -101,9 +113,28 @@ export default function CreateUser() {
                   helperText={errors?.email?.message}
                 />
 
+                <ControlledAutocomplete
+                  name="roleId"
+                  fullWidth
+                  disablePortal
+                  disableClearable
+                  options={generateRoleOptions(roles)}
+                  renderInput={(params) => (
+                    <MuiTextField
+                      {...params}
+                      required
+                      label={formatMessage('userForm.role')}
+                      error={!!errors?.roleId}
+                      helperText={errors?.roleId?.message}
+                    />
+                  )}
+                  loading={isRolesLoading}
+                  showHelperText={false}
+                />
+
                 {errors?.root?.general && (
                   <Alert data-test="create-user-error-alert" severity="error">
-                    {errors?.root?.general?.message}
+                    {errors.root.general.message}
                   </Alert>
                 )}
 

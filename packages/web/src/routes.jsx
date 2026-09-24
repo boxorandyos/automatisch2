@@ -46,7 +46,6 @@ function Routes() {
   const { data: configData } = useAutomatischConfig();
 
   const config = configData?.data;
-  const isEnterprise = automatischInfo?.data?.isEnterprise;
 
   const installed = isSuccess
     ? automatischInfo.data.installationCompleted
@@ -105,72 +104,68 @@ function Routes() {
         }
       />
 
-      {(isEnterprise || isEnterprise === undefined) && (
-        <>
-          <Route
-            path={URLS.FORMS}
-            element={
-              <Layout>
-                <Forms />
-              </Layout>
-            }
-          />
+      <Route
+        path={URLS.FORMS}
+        element={
+          <Layout>
+            <Forms />
+          </Layout>
+        }
+      />
 
-          <Route
-            path={URLS.CREATE_FORM}
-            element={
-              <Layout>
-                <CreateForm />
-              </Layout>
-            }
-          />
+      <Route
+        path={URLS.CREATE_FORM}
+        element={
+          <Layout>
+            <CreateForm />
+          </Layout>
+        }
+      />
 
-          <Route
-            path={URLS.FORM_PATTERN}
-            element={
-              <Layout>
-                <EditForm />
-              </Layout>
-            }
-          />
+      <Route
+        path={URLS.FORM_PATTERN}
+        element={
+          <Layout>
+            <EditForm />
+          </Layout>
+        }
+      />
 
-          <Route
-            path={URLS.AGENTS}
-            element={
-              <Layout>
-                <Agents />
-              </Layout>
-            }
-          />
+      <Route
+        path={URLS.AGENTS}
+        element={
+          <Layout>
+            <Agents />
+          </Layout>
+        }
+      />
 
-          <Route
-            path={`${URLS.AGENT_PATTERN}/*`}
-            element={
-              <Layout>
-                <Agent />
-              </Layout>
-            }
-          />
+      <Route
+        path={`${URLS.AGENT_PATTERN}/*`}
+        element={
+          <Layout>
+            <Agent />
+          </Layout>
+        }
+      />
 
-          <Route
-            path={URLS.MCP_SERVERS}
-            element={
-              <Layout>
-                <McpServers />
-              </Layout>
-            }
-          />
+      <Route
+        path={URLS.MCP_SERVERS}
+        element={
+          <Layout>
+            <McpServers />
+          </Layout>
+        }
+      />
 
-          <Route
-            path={`${URLS.MCP_SERVER_PATTERN}/*`}
-            element={
-              <Layout>
-                <McpServer />
-              </Layout>
-            }
-          />
-        </>
-      )}
+      <Route
+        path={`${URLS.MCP_SERVER_PATTERN}/*`}
+        element={
+          <Layout>
+            <McpServer />
+          </Layout>
+        }
+      />
 
       <Route path={`${URLS.EDITOR}/*`} element={<EditorRoutes />} />
 

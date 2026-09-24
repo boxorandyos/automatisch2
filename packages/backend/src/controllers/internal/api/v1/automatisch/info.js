@@ -9,7 +9,7 @@ export default async (request, response) => {
     docsUrl: appConfig.docsUrl,
     installationCompleted,
     isCloud: appConfig.isCloud,
-    isEnterprise: false,
+    isEnterprise: true,
     isMation: appConfig.isMation,
   };
 

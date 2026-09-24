@@ -14,6 +14,7 @@ import useDuplicateFlow from 'hooks/useDuplicateFlow';
 import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 import useExportFlow from 'hooks/useExportFlow';
 import useFormatMessage from 'hooks/useFormatMessage';
+import useIsCurrentUserAdmin from 'hooks/useIsCurrentUserAdmin';
 
 function ContextMenu(props) {
   const location = useLocation();
@@ -25,6 +26,7 @@ function ContextMenu(props) {
   const enqueueSnackbar = useEnqueueSnackbar();
   const formatMessage = useFormatMessage();
   const queryClient = useQueryClient();
+  const isCurrentUserAdmin = useIsCurrentUserAdmin();
   const { mutateAsync: duplicateFlow } = useDuplicateFlow(flowId);
   const { mutateAsync: deleteFlow } = useDeleteFlow(flowId);
   const { mutateAsync: exportFlow } = useExportFlow(flowId);
@@ -150,6 +152,17 @@ function ContextMenu(props) {
             </MenuItem>
           )}
         </Can>
+
+        {isCurrentUserAdmin && (
+          <MenuItem
+            component={Link}
+            data-test="create-template-from-flow"
+            to={URLS.ADMIN_CREATE_TEMPLATE(flowId)}
+            onClick={onClose}
+          >
+            {formatMessage('flow.createTemplateFromFlow')}
+          </MenuItem>
+        )}
 
         <Can I="manage" a="Flow" passThrough>
           {(allowed) => (

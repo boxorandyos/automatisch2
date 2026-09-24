@@ -8,6 +8,7 @@ import * as React from 'react';
 
 import AddAppConnection from 'components/AddAppConnection';
 import FlowSubstepTitle from 'components/FlowSubstepTitle';
+import OAuthClientsDialog from 'components/OAuthClientsDialog';
 import { EditorContext } from 'contexts/Editor';
 import useFormatMessage from 'hooks/useFormatMessage';
 import {
@@ -18,9 +19,12 @@ import {
 import useStepConnection from 'hooks/useStepConnection';
 import { useQueryClient } from '@tanstack/react-query';
 import useAppConnections from 'hooks/useAppConnections';
+import useAppConfig from 'hooks/useAppConfig';
+import useOAuthClients from 'hooks/useOAuthClients';
 import useTestConnection from 'hooks/useTestConnection';
 
 const ADD_CONNECTION_VALUE = 'ADD_CONNECTION';
+const ADD_SHARED_CONNECTION_VALUE = 'ADD_SHARED_CONNECTION';
 
 const optionGenerator = (connection) => ({
   label: connection?.formattedData?.screenName ?? 'Unnamed',
@@ -47,6 +51,9 @@ function ChooseConnectionSubstep(props) {
   const editorContext = React.useContext(EditorContext);
   const [showAddConnectionDialog, setShowAddConnectionDialog] =
     React.useState(false);
+  const [showOAuthClientsDialog, setShowOAuthClientsDialog] =
+    React.useState(false);
+  const [oauthClientId, setOauthClientId] = React.useState();
   const [submitting, setSubmitting] = React.useState(false);
 
   const queryClient = useQueryClient();
@@ -56,6 +63,12 @@ function ChooseConnectionSubstep(props) {
     isLoading: isAppConnectionsLoading,
     refetch: refetchAppConnections,
   } = useAppConnections(appKey);
+  const { data: appConfigData } = useAppConfig(appKey);
+  const appConfig = appConfigData?.data;
+  const { data: oauthClientsData } = useOAuthClients(appKey);
+  const activeOAuthClients = (oauthClientsData?.data || []).filter(
+    (client) => client.active,
+  );
 
   const { data: stepConnectionData } = useStepConnection(step.id);
   const stepConnection = stepConnectionData?.data;
@@ -83,13 +96,27 @@ function ChooseConnectionSubstep(props) {
       appWithConnections?.map((connection) => optionGenerator(connection)) ||
       [];
 
-    const addCustomConnection = {
-      label: formatMessage('chooseConnectionSubstep.addNewConnection'),
-      value: ADD_CONNECTION_VALUE,
-    };
+    if (!appConfig?.useOnlyPredefinedAuthClients) {
+      options.push({
+        label: formatMessage('chooseConnectionSubstep.addNewConnection'),
+        value: ADD_CONNECTION_VALUE,
+      });
+    }
 
-    return options.concat([addCustomConnection]);
-  }, [appConnectionsData, formatMessage]);
+    if (activeOAuthClients.length > 0) {
+      options.push({
+        label: formatMessage('chooseConnectionSubstep.addNewSharedConnection'),
+        value: ADD_SHARED_CONNECTION_VALUE,
+      });
+    }
+
+    return options;
+  }, [
+    activeOAuthClients.length,
+    appConfig?.useOnlyPredefinedAuthClients,
+    appConnectionsData,
+    formatMessage,
+  ]);
 
   const { name } = substep;
 
@@ -97,6 +124,7 @@ function ChooseConnectionSubstep(props) {
     async (response) => {
       setSubmitting(true);
       setShowAddConnectionDialog(false);
+      setOauthClientId(undefined);
       const connectionId = response?.createConnection?.id;
       if (connectionId) {
         await refetchAppConnections();
@@ -114,6 +142,12 @@ function ChooseConnectionSubstep(props) {
     [onChange, refetchAppConnections, step],
   );
 
+  const handleOAuthClientClick = React.useCallback((client) => {
+    setShowOAuthClientsDialog(false);
+    setOauthClientId(client.id);
+    setShowAddConnectionDialog(true);
+  }, []);
+
   const handleChange = React.useCallback(
     async (event, selectedOption) => {
       if (typeof selectedOption === 'object') {
@@ -121,7 +155,10 @@ function ChooseConnectionSubstep(props) {
         const connectionId = selectedOption?.value;
 
         if (connectionId === ADD_CONNECTION_VALUE) {
+          setOauthClientId(undefined);
           setShowAddConnectionDialog(true);
+        } else if (connectionId === ADD_SHARED_CONNECTION_VALUE) {
+          setShowOAuthClientsDialog(true);
         } else if (connectionId !== stepConnection?.id) {
           await onChange({
             step: {
@@ -219,6 +256,15 @@ function ChooseConnectionSubstep(props) {
         <AddAppConnection
           onClose={handleAddConnectionClose}
           application={application}
+          oauthClientId={oauthClientId}
+        />
+      )}
+
+      {application && showOAuthClientsDialog && (
+        <OAuthClientsDialog
+          appKey={application.key}
+          onClose={() => setShowOAuthClientsDialog(false)}
+          onClientClick={handleOAuthClientClick}
         />
       )}
     </React.Fragment>

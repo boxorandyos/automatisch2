@@ -5,6 +5,7 @@ import Stack from '@mui/material/Stack';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
+import MuiTextField from '@mui/material/TextField';
 import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -12,6 +13,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 
 import Container from 'components/Container';
+import ControlledAutocomplete from 'components/ControlledAutocomplete';
 import Form from 'components/Form';
 import PageTitle from 'components/PageTitle';
 import TextField from 'components/TextField';
@@ -19,6 +21,11 @@ import * as URLS from 'config/urls';
 import useFormatMessage from 'hooks/useFormatMessage';
 import useAdminUpdateUser from 'hooks/useAdminUpdateUser';
 import useAdminUser from 'hooks/useAdminUser';
+import useRoles from 'hooks/useRoles';
+
+function generateRoleOptions(roles) {
+  return roles?.map(({ name: label, id: value }) => ({ label, value }));
+}
 
 const getValidationSchema = (formatMessage) => {
   const getMandatoryFieldMessage = (fieldTranslationId) =>
@@ -36,12 +43,14 @@ const getValidationSchema = (formatMessage) => {
       .trim()
       .email(formatMessage('userForm.validateEmail'))
       .required(getMandatoryFieldMessage('userForm.email')),
+    roleId: yup.string().required(getMandatoryFieldMessage('userForm.role')),
   });
 };
 
 const defaultValues = {
   fullName: '',
   email: '',
+  roleId: '',
 };
 
 export default function EditUser() {
@@ -51,6 +60,8 @@ export default function EditUser() {
     useAdminUpdateUser(userId);
   const { data: userData, isLoading: isUserLoading } = useAdminUser({ userId });
   const user = userData?.data;
+  const { data: rolesData, isLoading: isRolesLoading } = useRoles();
+  const roles = rolesData?.data;
   const enqueueSnackbar = useEnqueueSnackbar();
   const navigate = useNavigate();
 
@@ -59,6 +70,7 @@ export default function EditUser() {
       await updateUser({
         fullName: userDataToUpdate.fullName,
         email: userDataToUpdate.email,
+        roleId: userDataToUpdate.roleId,
       });
 
       enqueueSnackbar(formatMessage('editUser.successfullyUpdated'), {
@@ -92,6 +104,7 @@ export default function EditUser() {
               <Skeleton variant="rounded" height={55} />
               <Skeleton variant="rounded" height={55} />
               <Skeleton variant="rounded" height={55} />
+              <Skeleton variant="rounded" height={55} />
               <Skeleton variant="rounded" height={45} />
             </Stack>
           )}
@@ -103,6 +116,7 @@ export default function EditUser() {
                   ? {
                       fullName: user.fullName,
                       email: user.email,
+                      roleId: user.role?.id || user.roleId,
                     }
                   : defaultValues
               }
@@ -124,7 +138,7 @@ export default function EditUser() {
                   </Stack>
 
                   <TextField
-                    required={true}
+                    required
                     name="fullName"
                     label={formatMessage('userForm.fullName')}
                     data-test="full-name-input"
@@ -134,13 +148,32 @@ export default function EditUser() {
                   />
 
                   <TextField
-                    required={true}
+                    required
                     name="email"
                     label={formatMessage('userForm.email')}
                     data-test="email-input"
                     fullWidth
                     error={!!errors?.email}
                     helperText={errors?.email?.message}
+                  />
+
+                  <ControlledAutocomplete
+                    name="roleId"
+                    fullWidth
+                    disablePortal
+                    disableClearable
+                    options={generateRoleOptions(roles)}
+                    renderInput={(params) => (
+                      <MuiTextField
+                        {...params}
+                        required
+                        label={formatMessage('userForm.role')}
+                        error={!!errors?.roleId}
+                        helperText={errors?.roleId?.message}
+                      />
+                    )}
+                    loading={isRolesLoading}
+                    showHelperText={false}
                   />
 
                   {errors?.root?.general && (

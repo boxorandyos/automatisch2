@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 
 import Container from 'components/Container';
+import Invoices from 'components/Invoices';
 import PageTitle from 'components/PageTitle';
 import UsageDataInformation from 'components/UsageDataInformation';
 import useCloud from 'hooks/useCloud';
@@ -27,6 +28,7 @@ export default function BillingAndUsageSettings() {
               {formatMessage('billingAndUsageSettings.paymentInformation')}
             </Typography>
             <UsageDataInformation />
+            <Invoices />
           </Stack>
         </Grid>
       </Grid>

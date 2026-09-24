@@ -39,4 +39,32 @@ describe('POST /internal/api/v1/flows', () => {
     expect(response.body).toMatchObject(expectedPayload);
   });
 
+  it('should create a flow from a template when templateId is provided', async () => {
+    await createPermission({
+      action: 'manage',
+      subject: 'Flow',
+      roleId: currentUserRole.id,
+      conditions: ['isCreator'],
+    });
+
+    const emptyFlow = await currentUser.createEmptyFlow();
+    const { default: Template } = await import('@/models/template.js');
+    const template = await Template.createFromFlow(currentUser, {
+      name: 'Sample template',
+      flowId: emptyFlow.id,
+    });
+
+    const response = await request(app)
+      .post('/internal/api/v1/flows')
+      .query({ templateId: template.id })
+      .set('Authorization', token)
+      .expect(201);
+
+    const createdFlow = await currentUser
+      .$relatedQuery('flows')
+      .findById(response.body.data.id);
+
+    expect(createdFlow).toBeTruthy();
+    expect(createdFlow.id).not.toBe(emptyFlow.id);
+  });
 });

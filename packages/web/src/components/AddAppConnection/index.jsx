@@ -45,7 +45,8 @@ function getObjectOfEntries(iterator) {
 }
 
 function AddAppConnection(props) {
-  const { application, connectionId, onClose } = props;
+  const { application, connectionId, oauthClientId: oauthClientIdProp, onClose } =
+    props;
   const { name, authDocUrl, key } = application;
   const { data: auth } = useAppAuth(key);
   const formatMessage = useFormatMessage();
@@ -53,9 +54,17 @@ function AddAppConnection(props) {
   const [errorDetails, setErrorDetails] = React.useState(null);
   const [inProgress, setInProgress] = React.useState(false);
   const hasConnection = Boolean(connectionId);
+  const searchParams = React.useMemo(
+    () => new URLSearchParams(window.location.search),
+    [],
+  );
+  const oauthClientId =
+    oauthClientIdProp || searchParams.get('oauthClientId') || undefined;
   const { authenticate } = useAuthenticateApp({
     appKey: key,
     connectionId,
+    oauthClientId,
+    useShared: Boolean(oauthClientId),
   });
   const queryClient = useQueryClient();
   const { mutateAsync: updateConnection } = useUpdateConnection();
@@ -183,6 +192,7 @@ AddAppConnection.propTypes = {
   onClose: PropTypes.func.isRequired,
   application: AppPropType.isRequired,
   connectionId: PropTypes.string,
+  oauthClientId: PropTypes.string,
 };
 
 export default AddAppConnection;

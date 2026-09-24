@@ -31,40 +31,32 @@ const additionalDrawerLinkIcons = {
   ArrowBackIosNew: ArrowBackIosNewIcon,
 };
 
-function createDrawerLinks({ isEnterprise }) {
-  const links = [
+function createDrawerLinks() {
+  return [
     {
       Icon: SwapCallsIcon,
       primary: 'drawer.flows',
       to: URLS.FLOWS,
       dataTest: 'flows-page-drawer-link',
     },
-  ];
-
-  if (isEnterprise) {
-    links.push(
-      {
-        Icon: DynamicFormIcon,
-        primary: 'drawer.forms',
-        to: URLS.FORMS,
-        dataTest: 'forms-page-drawer-link',
-      },
-      {
-        Icon: SmartToyIcon,
-        primary: 'drawer.agents',
-        to: URLS.AGENTS,
-        dataTest: 'agents-page-drawer-link',
-      },
-      {
-        Icon: DnsIcon,
-        primary: 'drawer.mcpServers',
-        to: URLS.MCP_SERVERS,
-        dataTest: 'mcp-servers-page-drawer-link',
-      },
-    );
-  }
-
-  links.push(
+    {
+      Icon: DynamicFormIcon,
+      primary: 'drawer.forms',
+      to: URLS.FORMS,
+      dataTest: 'forms-page-drawer-link',
+    },
+    {
+      Icon: SmartToyIcon,
+      primary: 'drawer.agents',
+      to: URLS.AGENTS,
+      dataTest: 'agents-page-drawer-link',
+    },
+    {
+      Icon: DnsIcon,
+      primary: 'drawer.mcpServers',
+      to: URLS.MCP_SERVERS,
+      dataTest: 'mcp-servers-page-drawer-link',
+    },
     {
       Icon: AppsIcon,
       primary: 'drawer.apps',
@@ -77,9 +69,7 @@ function createDrawerLinks({ isEnterprise }) {
       to: URLS.EXECUTIONS,
       dataTest: 'executions-page-drawer-link',
     },
-  );
-
-  return links;
+  ];
 }
 
 const generateDrawerBottomLinks = ({
@@ -129,7 +119,6 @@ function PublicLayout({ children }) {
 
   const automatischInfo = automatischInfoData?.data;
   const config = configData?.data;
-  const isEnterprise = automatischInfo?.isEnterprise;
 
   const theme = useTheme();
   const formatMessage = useFormatMessage();
@@ -138,10 +127,7 @@ function PublicLayout({ children }) {
   const openDrawer = () => setDrawerOpen(true);
   const closeDrawer = () => setDrawerOpen(false);
 
-  const drawerLinks = React.useMemo(
-    () => createDrawerLinks({ isEnterprise }),
-    [isEnterprise],
-  );
+  const drawerLinks = React.useMemo(() => createDrawerLinks(), []);
 
   const bottomLinks = React.useMemo(() => {
     return generateDrawerBottomLinks({
