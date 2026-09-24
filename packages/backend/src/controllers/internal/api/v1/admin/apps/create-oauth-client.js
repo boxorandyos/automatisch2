@@ -23,5 +23,6 @@ const oauthClientParams = (request) => {
     name,
     active,
     formattedAuthDefaults,
+    appKey: request.params.appKey,
   };
 };
