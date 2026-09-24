@@ -5,6 +5,7 @@ import {
   Route,
   Routes,
   useMatch,
+  useNavigate,
   useParams,
 } from 'react-router-dom';
 import Box from '@mui/material/Box';
@@ -29,6 +30,7 @@ export default function AdminApplication() {
   const theme = useTheme();
   const matchSmallScreens = useMediaQuery(theme.breakpoints.down('md'));
   const formatMessage = useFormatMessage();
+  const navigate = useNavigate();
   const { appKey } = useParams();
   const { data, isLoading } = useApp(appKey);
   const app = data?.data || {};
@@ -42,76 +44,100 @@ export default function AdminApplication() {
     end: false,
   });
 
+  const goToAuthClientsPage = () =>
+    navigate(URLS.ADMIN_APP_AUTH_CLIENTS(appKey));
+
   if (isLoading) {
     return null;
   }
 
   return (
-    <Box sx={{ py: 3 }}>
-      <Container>
-        <Grid container sx={{ mb: 3 }} alignItems="center">
-          <Grid item xs="auto" sx={{ mr: 3 }}>
-            <AppIcon url={app.iconUrl} color={app.primaryColor} name={app.name} />
+    <>
+      <Box sx={{ py: 3 }}>
+        <Container>
+          <Grid container sx={{ mb: 3 }} alignItems="center">
+            <Grid item xs="auto" sx={{ mr: 3 }}>
+              <AppIcon
+                url={app.iconUrl}
+                color={app.primaryColor}
+                name={app.name}
+              />
+            </Grid>
+            <Grid item xs>
+              <PageTitle>{app.name}</PageTitle>
+            </Grid>
           </Grid>
-          <Grid item xs>
-            <PageTitle>{app.name}</PageTitle>
-          </Grid>
-        </Grid>
 
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tabs
-            variant={matchSmallScreens ? 'fullWidth' : undefined}
-            value={
-              settingsMatch?.pattern?.path ||
-              authClientsMatch?.pattern?.path ||
-              URLS.ADMIN_APP_SETTINGS_PATTERN
-            }
-          >
-            <Tab
-              label={formatMessage('adminApps.settings')}
-              to={URLS.ADMIN_APP_SETTINGS(appKey)}
-              value={URLS.ADMIN_APP_SETTINGS_PATTERN}
-              component={Link}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+            <Tabs
+              variant={matchSmallScreens ? 'fullWidth' : undefined}
+              value={
+                settingsMatch?.pattern?.path ||
+                authClientsMatch?.pattern?.path ||
+                URLS.ADMIN_APP_SETTINGS_PATTERN
+              }
+            >
+              <Tab
+                label={formatMessage('adminApps.settings')}
+                to={URLS.ADMIN_APP_SETTINGS(appKey)}
+                value={URLS.ADMIN_APP_SETTINGS_PATTERN}
+                component={Link}
+              />
+              {app.supportsOauthClients && (
+                <Tab
+                  label={formatMessage('adminApps.oauthClients')}
+                  to={URLS.ADMIN_APP_AUTH_CLIENTS(appKey)}
+                  value={URLS.ADMIN_APP_AUTH_CLIENTS_PATTERN}
+                  component={Link}
+                  data-test="oauth-clients-tab"
+                />
+              )}
+            </Tabs>
+          </Box>
+
+          <Routes>
+            <Route
+              path="settings"
+              element={<AdminApplicationSettings appKey={appKey} />}
             />
             {app.supportsOauthClients && (
-              <Tab
-                label={formatMessage('adminApps.oauthClients')}
-                to={URLS.ADMIN_APP_AUTH_CLIENTS(appKey)}
-                value={URLS.ADMIN_APP_AUTH_CLIENTS_PATTERN}
-                component={Link}
-                data-test="oauth-clients-tab"
-              />
-            )}
-          </Tabs>
-        </Box>
-
-        <Routes>
-          <Route
-            path="settings"
-            element={<AdminApplicationSettings appKey={appKey} />}
-          />
-          {app.supportsOauthClients && (
-            <>
               <Route
-                path="oauth-clients"
+                path="oauth-clients/*"
                 element={<AdminApplicationOAuthClients appKey={appKey} />}
               />
-              <Route
-                path="oauth-clients/create"
-                element={<AdminCreateOAuthClient appKey={appKey} />}
-              />
-              <Route
-                path="oauth-clients/:oauthClientId"
-                element={<AdminUpdateOAuthClient appKey={appKey} />}
-              />
-            </>
-          )}
+            )}
+            <Route
+              index
+              element={
+                <Navigate to={URLS.ADMIN_APP_SETTINGS(appKey)} replace />
+              }
+            />
+          </Routes>
+        </Container>
+      </Box>
+
+      {app.supportsOauthClients && (
+        <Routes>
           <Route
-            index
-            element={<Navigate to={URLS.ADMIN_APP_SETTINGS(appKey)} replace />}
+            path="oauth-clients/create"
+            element={
+              <AdminCreateOAuthClient
+                appKey={appKey}
+                onClose={goToAuthClientsPage}
+              />
+            }
+          />
+          <Route
+            path="oauth-clients/:oauthClientId"
+            element={
+              <AdminUpdateOAuthClient
+                appKey={appKey}
+                onClose={goToAuthClientsPage}
+              />
+            }
           />
         </Routes>
-      </Container>
-    </Box>
+      )}
+    </>
   );
 }

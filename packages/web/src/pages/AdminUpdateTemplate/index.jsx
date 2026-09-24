@@ -3,13 +3,12 @@ import Alert from '@mui/material/Alert';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import * as React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import Container from 'components/Container';
 import Form from 'components/Form';
 import PageTitle from 'components/PageTitle';
 import TextField from 'components/TextField';
-import * as URLS from 'config/urls';
 import useAdminTemplate from 'hooks/useAdminTemplate';
 import useAdminUpdateTemplate from 'hooks/useAdminUpdateTemplate';
 import useFormatMessage from 'hooks/useFormatMessage';
@@ -17,22 +16,22 @@ import useFormatMessage from 'hooks/useFormatMessage';
 export default function AdminUpdateTemplate() {
   const formatMessage = useFormatMessage();
   const { templateId } = useParams();
-  const navigate = useNavigate();
-  const { data, isLoading } = useAdminTemplate(templateId);
+  const {
+    data,
+    isLoading: isTemplateLoading,
+    isError: isTemplateError,
+    error: templateError,
+  } = useAdminTemplate(templateId);
   const template = data?.data;
   const {
     mutateAsync: updateTemplate,
     isPending,
-    error,
+    isError: isUpdateTemplateError,
+    error: updateTemplateError,
   } = useAdminUpdateTemplate(templateId);
-
-  if (isLoading || !template) {
-    return null;
-  }
 
   const handleSubmit = async (values) => {
     await updateTemplate({ name: values.name });
-    navigate(URLS.ADMIN_TEMPLATES);
   };
 
   return (
@@ -42,35 +41,40 @@ export default function AdminUpdateTemplate() {
           <PageTitle>{formatMessage('adminTemplatePage.title')}</PageTitle>
         </Grid>
         <Grid item xs={12}>
-          <Form
-            onSubmit={handleSubmit}
-            defaultValues={{ name: template.name || '' }}
-            render={() => (
-              <Stack gap={2}>
-                <TextField
-                  name="name"
-                  label={formatMessage('adminUpdateTemplate.titleFieldLabel')}
-                  fullWidth
-                  required
-                  data-test="template-name-input"
-                />
-                <LoadingButton
-                  type="submit"
-                  variant="contained"
-                  loading={isPending}
-                  data-test="update-button"
-                >
-                  {formatMessage('adminUpdateTemplate.submit')}
-                </LoadingButton>
-                {error && (
-                  <Alert severity="error" sx={{ mt: 3 }} data-test="update-alert">
-                    {error?.response?.data?.errors?.general?.[0] ||
-                      error.message}
-                  </Alert>
-                )}
-              </Stack>
-            )}
-          />
+          {!isTemplateLoading && (
+            <Form
+              onSubmit={handleSubmit}
+              defaultValues={{ name: template?.name || '' }}
+              render={() => (
+                <Stack gap={2}>
+                  <TextField
+                    name="name"
+                    label={formatMessage('adminUpdateTemplate.titleFieldLabel')}
+                    fullWidth
+                    required
+                    disabled={!template}
+                    data-test="template-name-input"
+                  />
+                  <LoadingButton
+                    type="submit"
+                    variant="contained"
+                    loading={isPending}
+                    disabled={!template}
+                    data-test="update-button"
+                  >
+                    {formatMessage('adminUpdateTemplate.submit')}
+                  </LoadingButton>
+                </Stack>
+              )}
+            />
+          )}
+          {(isTemplateError || isUpdateTemplateError) && (
+            <Alert severity="error" sx={{ mt: 3 }} data-test="update-alert">
+              {templateError?.message ||
+                updateTemplateError?.message ||
+                formatMessage('genericError')}
+            </Alert>
+          )}
         </Grid>
       </Grid>
     </Container>

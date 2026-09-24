@@ -1,38 +1,60 @@
-import LoadingButton from '@mui/lab/LoadingButton';
-import Stack from '@mui/material/Stack';
 import PropTypes from 'prop-types';
 import * as React from 'react';
 import { useParams } from 'react-router-dom';
 
-import Form from 'components/Form';
-import Switch from 'components/Switch';
-import TextField from 'components/TextField';
+import AdminApplicationOAuthClientDialog from 'components/AdminApplicationOAuthClientDialog';
 import useAdminOAuthClient from 'hooks/useAdminOAuthClient';
 import useAdminUpdateOAuthClient from 'hooks/useAdminUpdateOAuthClient';
 import useAppAuth from 'hooks/useAppAuth';
 import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 import useFormatMessage from 'hooks/useFormatMessage';
 
-export default function AdminUpdateOAuthClient({ appKey }) {
+export default function AdminUpdateOAuthClient({ appKey, onClose }) {
   const formatMessage = useFormatMessage();
   const enqueueSnackbar = useEnqueueSnackbar();
   const { oauthClientId } = useParams();
-  const { data, isLoading } = useAdminOAuthClient(appKey, oauthClientId);
-  const client = data?.data;
-  const { data: authData } = useAppAuth(appKey);
-  const fields = authData?.data?.fields || [];
-  const { mutateAsync: updateClient, isPending } = useAdminUpdateOAuthClient(
+  const { data: adminOAuthClient, isLoading } = useAdminOAuthClient(
     appKey,
     oauthClientId,
   );
+  const { data: auth } = useAppAuth(appKey);
+  const {
+    mutateAsync: updateOAuthClient,
+    isPending,
+    error,
+  } = useAdminUpdateOAuthClient(appKey, oauthClientId);
 
-  if (isLoading || !client) {
-    return null;
-  }
+  const authFields = auth?.data?.fields;
 
-  const handleSubmit = async (values) => {
+  const getAuthFieldsDefaultValues = React.useCallback(() => {
+    if (!authFields) {
+      return {};
+    }
+
+    const values = {};
+    authFields.forEach((field) => {
+      if (field.value || field.type !== 'string') {
+        values[field.key] = field.value;
+      } else if (field.type === 'string') {
+        values[field.key] = '';
+      }
+    });
+    return values;
+  }, [authFields]);
+
+  const defaultValues = React.useMemo(
+    () => ({
+      name: adminOAuthClient?.data?.name || '',
+      active: adminOAuthClient?.data?.active || false,
+      ...getAuthFieldsDefaultValues(),
+      ...(adminOAuthClient?.data?.formattedAuthDefaults || {}),
+    }),
+    [adminOAuthClient, getAuthFieldsDefaultValues],
+  );
+
+  const submitHandler = async (values) => {
     const { name, active, ...formattedAuthDefaults } = values;
-    await updateClient({
+    await updateOAuthClient({
       name,
       active,
       formattedAuthDefaults,
@@ -40,57 +62,25 @@ export default function AdminUpdateOAuthClient({ appKey }) {
     enqueueSnackbar(formatMessage('updateOAuthClient.success'), {
       variant: 'success',
     });
-  };
-
-  const defaultValues = {
-    name: client.name || '',
-    active: !!client.active,
-    ...(client.formattedAuthDefaults || {}),
+    onClose();
   };
 
   return (
-    <Form
-      data-test="auth-client-form"
-      onSubmit={handleSubmit}
+    <AdminApplicationOAuthClientDialog
+      onClose={onClose}
+      error={error}
+      title={formatMessage('updateOAuthClient.title')}
+      loading={isLoading}
+      submitHandler={submitHandler}
+      authFields={authFields}
+      submitting={isPending}
       defaultValues={defaultValues}
-      render={({ formState: { isDirty } }) => (
-        <Stack gap={2}>
-          <Switch
-            name="active"
-            label={formatMessage('oauthClient.inputActive')}
-          />
-          <TextField
-            name="name"
-            label={formatMessage('oauthClient.inputName')}
-            fullWidth
-            required
-          />
-          {fields.map((field) => (
-            <TextField
-              key={field.key}
-              name={field.key}
-              label={field.label || field.key}
-              fullWidth
-              type={field.type === 'password' ? 'password' : 'text'}
-            />
-          ))}
-          <LoadingButton
-            data-test="submit-auth-client-form"
-            type="submit"
-            variant="contained"
-            color="primary"
-            sx={{ boxShadow: 2 }}
-            loading={isPending}
-            disabled={!isDirty}
-          >
-            {formatMessage('oauthClient.buttonSubmit')}
-          </LoadingButton>
-        </Stack>
-      )}
+      disabled={!adminOAuthClient}
     />
   );
 }
 
 AdminUpdateOAuthClient.propTypes = {
   appKey: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
