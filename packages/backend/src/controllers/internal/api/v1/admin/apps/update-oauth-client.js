@@ -5,7 +5,7 @@ export default async (request, response) => {
   const oauthClient = await OAuthClient.query()
     .findOne({
       id: request.params.oauthClientId,
-      appKey: request.params.appKey,
+      app_key: request.params.appKey,
     })
     .throwIfNotFound();
 

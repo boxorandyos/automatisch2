@@ -59,7 +59,7 @@ class AppConfig extends Base {
       });
     }
 
-    return await this.$relatedQuery('oauthClients').insert(params);
+    return await this.$relatedQuery('oauthClients').insertAndFetch(params);
   }
 }
 

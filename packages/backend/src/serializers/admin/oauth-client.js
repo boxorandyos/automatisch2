@@ -5,8 +5,8 @@ const adminOAuthClientSerializer = (oauthClient) => {
     name: oauthClient.name,
     active: oauthClient.active,
     formattedAuthDefaults: oauthClient.formattedAuthDefaults,
-    createdAt: oauthClient.createdAt.getTime(),
-    updatedAt: oauthClient.updatedAt.getTime(),
+    createdAt: new Date(oauthClient.createdAt).getTime(),
+    updatedAt: new Date(oauthClient.updatedAt).getTime(),
   };
 };
 
