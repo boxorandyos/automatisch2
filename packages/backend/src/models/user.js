@@ -4,7 +4,6 @@ import crypto from 'node:crypto';
 import { ValidationError } from 'objection';
 
 import appConfig from '@/config/app.js';
-import { hasValidLicense } from '@/helpers/license.ee.js';
 import userAbility from '@/helpers/user-ability.js';
 import createAuthTokenByUserId from '@/helpers/create-auth-token-by-user-id.js';
 import Base from '@/models/base.js';
@@ -15,27 +14,29 @@ import Config from '@/models/config.js';
 import Execution from '@/models/execution.js';
 import ExecutionStep from '@/models/execution-step.js';
 import Flow from '@/models/flow.js';
-import Identity from '@/models/identity.ee.js';
+import Identity from '@/models/identity.js';
 import Permission from '@/models/permission.js';
 import Role from '@/models/role.js';
-import Form from '@/models/form.ee.js';
+import Form from '@/models/form.js';
 import Step from '@/models/step.js';
-import Subscription from '@/models/subscription.ee.js';
+import Subscription from '@/models/subscription.js';
 import Folder from '@/models/folder.js';
-import UsageData from '@/models/usage-data.ee.js';
-import Template from '@/models/template.ee.js';
-import McpServer from '@/models/mcp-server.ee.js';
-import Agent from '@/models/agent.ee.js';
-import Billing from '@/helpers/billing/index.ee.js';
+import UsageData from '@/models/usage-data.js';
+import Template from '@/models/template.js';
+import McpServer from '@/models/mcp-server.js';
+import McpToolExecution from '@/models/mcp-tool-execution.js';
+import Agent from '@/models/agent.js';
 import NotAuthorizedError from '@/errors/not-authorized.js';
 
-import deleteUserQueue from '@/queues/delete-user.ee.js';
+import deleteUserQueue from '@/queues/delete-user.js';
 import flowQueue from '@/queues/flow.js';
 import emailQueue from '@/queues/email.js';
 import {
   REMOVE_AFTER_30_DAYS_OR_150_JOBS,
   REMOVE_AFTER_7_DAYS_OR_50_JOBS,
 } from '@/helpers/remove-job-configuration.js';
+import billing from '@/helpers/billing/index.js';
+import { freePlan, getPlanById } from '@/helpers/billing/plans.js';
 
 class User extends Base {
   static tableName = 'users';
@@ -372,6 +373,30 @@ class User extends Base {
     await this.$relatedQuery('connections').delete();
     await this.$relatedQuery('identities').delete();
 
+    const agents = await this.$relatedQuery('agents');
+    for (const agent of agents) {
+      await agent.$relatedQuery('agentExecutions').delete();
+      await agent.$relatedQuery('agentTools').delete();
+    }
+    await this.$relatedQuery('agents').delete();
+
+    const mcpServers = await this.$relatedQuery('mcpServers');
+    for (const mcpServer of mcpServers) {
+      const mcpToolIds = (
+        await mcpServer.$relatedQuery('mcpTools').select('id')
+      ).map((tool) => tool.id);
+
+      if (mcpToolIds.length) {
+        await McpToolExecution.query()
+          .delete()
+          .whereIn('mcp_tool_id', mcpToolIds);
+      }
+
+      await mcpServer.$relatedQuery('mcpSessions').delete();
+      await mcpServer.$relatedQuery('mcpTools').delete();
+    }
+    await this.$relatedQuery('mcpServers').delete();
+
     if (appConfig.isCloud) {
       await this.$relatedQuery('subscriptions').delete();
       await this.$relatedQuery('usageData').delete();
@@ -386,7 +411,7 @@ class User extends Base {
     const jobPayload = {
       email: this.email,
       subject: 'Reset Password',
-      template: 'reset-password-instructions.ee',
+      template: 'reset-password-instructions',
       params: {
         token: this.resetPasswordToken,
         webAppUrl: appConfig.webAppUrl,
@@ -468,8 +493,8 @@ class User extends Base {
       return true;
     }
 
-    if ((await this.hasActiveSubscription()) && (await this.withinLimits())) {
-      return true;
+    if (await this.hasActiveSubscription()) {
+      return await this.withinLimits();
     }
 
     return false;
@@ -484,7 +509,7 @@ class User extends Base {
       return false;
     }
 
-    if (await this.hasActiveSubscription()) {
+    if (appConfig.isCloud && (await this.hasActiveSubscription())) {
       return false;
     }
 
@@ -501,40 +526,35 @@ class User extends Base {
 
     const subscription = await this.$relatedQuery('currentSubscription');
 
-    return subscription?.isValid;
+    return subscription?.isValid || false;
   }
 
   async withinLimits() {
     const currentSubscription = await this.$relatedQuery('currentSubscription');
-    const plan = currentSubscription.plan;
-    const currentUsageData = await this.$relatedQuery('currentUsageData');
+    const plan = getPlanById(currentSubscription?.paddlePlanId);
+    const usageData = await this.$relatedQuery('currentUsageData');
+    const consumedTaskCount = usageData?.consumedTaskCount || 0;
 
-    return currentUsageData.consumedTaskCount < plan.quota;
+    return consumedTaskCount < plan.quota;
   }
 
   async getPlanAndUsage() {
-    const usageData = await this.$relatedQuery(
-      'currentUsageData'
-    ).throwIfNotFound();
+    const currentSubscription = await this.$relatedQuery('currentSubscription');
+    const usageData = await this.$relatedQuery('currentUsageData');
+    const plan = currentSubscription?.isValid
+      ? getPlanById(currentSubscription.paddlePlanId)
+      : freePlan;
 
-    const subscription = await this.$relatedQuery('currentSubscription');
-
-    const currentPlan = Billing.paddlePlans.find(
-      (plan) => plan.productId === subscription?.paddlePlanId
-    );
-
-    const planAndUsage = {
+    return {
       usage: {
-        task: usageData.consumedTaskCount,
+        task: usageData?.consumedTaskCount || 0,
       },
       plan: {
-        id: subscription?.paddlePlanId || null,
-        name: subscription ? currentPlan.name : 'Free Trial',
-        limit: currentPlan?.limit || null,
+        id: plan.productId,
+        name: plan.name,
+        limit: plan.limit,
       },
     };
-
-    return planAndUsage;
   }
 
   async getInvoices() {
@@ -544,11 +564,18 @@ class User extends Base {
       return [];
     }
 
-    const invoices = await Billing.paddleClient.getInvoices(
-      Number(subscription.paddleSubscriptionId)
+    return await billing.paddleClient.getInvoices(
+      subscription.paddleSubscriptionId
     );
+  }
 
-    return invoices;
+  async createUsageData(subscriptionId) {
+    return await this.$relatedQuery('usageData').insertAndFetch({
+      userId: this.id,
+      subscriptionId: subscriptionId || null,
+      consumedTaskCount: 0,
+      nextResetAt: DateTime.now().plus({ days: 30 }).toISO(),
+    });
   }
 
   async hasFolderAccess(folderId) {
@@ -745,37 +772,6 @@ class User extends Base {
     }
   }
 
-  async createUsageData() {
-    if (appConfig.isCloud) {
-      return await this.$relatedQuery('usageData').insertAndFetch({
-        userId: this.id,
-        consumedTaskCount: 0,
-        nextResetAt: DateTime.now().plus({ days: 30 }).toISODate(),
-      });
-    }
-  }
-
-  async omitEnterprisePermissionsWithoutValidLicense() {
-    if (await hasValidLicense()) {
-      return this;
-    }
-
-    if (Array.isArray(this.permissions)) {
-      this.permissions = this.permissions.filter((permission) => {
-        const restrictedSubjects = [
-          'App',
-          'Role',
-          'SamlAuthProvider',
-          'Config',
-          'ApiToken',
-          'Template',
-        ];
-
-        return !restrictedSubjects.includes(permission.subject);
-      });
-    }
-  }
-
   async createEmptyFlow() {
     const flow = await this.$relatedQuery('flows').insertAndFetch({
       name: 'Name your flow',
@@ -818,11 +814,9 @@ class User extends Base {
   async $afterInsert(queryContext) {
     await super.$afterInsert(queryContext);
 
-    await this.createUsageData();
-  }
-
-  async $afterFind() {
-    await this.omitEnterprisePermissionsWithoutValidLicense();
+    if (appConfig.isCloud) {
+      await this.createUsageData();
+    }
   }
 }
 

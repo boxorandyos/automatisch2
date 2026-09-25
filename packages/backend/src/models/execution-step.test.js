@@ -3,7 +3,6 @@ import Execution from '@/models/execution.js';
 import ExecutionStep from '@/models/execution-step.js';
 import Step from '@/models/step.js';
 import Base from '@/models/base.js';
-import UsageData from '@/models/usage-data.ee.js';
 import Telemetry from '@/helpers/telemetry/index.js';
 import appConfig from '@/config/app.js';
 import { createExecution } from '@/factories/execution.js';
@@ -90,17 +89,10 @@ describe('ExecutionStep model', () => {
   });
 
   describe('updateUsageData', () => {
-    it('should call usageData.increaseConsumedTaskCountByOne', async () => {
+    it('should resolve as a no-op', async () => {
       const executionStep = await createExecutionStep();
 
-      const increaseConsumedTaskCountByOneSpy = vi.spyOn(
-        UsageData.prototype,
-        'increaseConsumedTaskCountByOne'
-      );
-
-      await executionStep.updateUsageData();
-
-      expect(increaseConsumedTaskCountByOneSpy).toHaveBeenCalledOnce();
+      await expect(executionStep.updateUsageData()).resolves.toBeUndefined();
     });
   });
 

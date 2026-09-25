@@ -11,50 +11,52 @@ import Typography from '@mui/material/Typography';
 import { DateTime } from 'luxon';
 import * as React from 'react';
 
+import DeleteApiTokenButton from 'components/DeleteApiTokenButton';
 import ListLoader from 'components/ListLoader';
 import useFormatMessage from 'hooks/useFormatMessage';
-import DeleteApiTokenButton from 'components/DeleteApiTokenButton/index.ee';
 
-export default function ApiTokenList({ loading, apiTokens }) {
+export default function ApiTokenList({ loading = false, apiTokens = [] }) {
   const formatMessage = useFormatMessage();
 
   return (
-    <>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell component="th">
-                <Typography
-                  variant="subtitle1"
-                  sx={{ color: 'text.secondary', fontWeight: 700 }}
-                >
-                  {formatMessage('adminApiTokenList.token')}
-                </Typography>
-              </TableCell>
+    <TableContainer component={Paper}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell component="th">
+              <Typography
+                variant="subtitle1"
+                sx={{ color: 'text.secondary', fontWeight: 700 }}
+              >
+                {formatMessage('adminApiTokenList.token')}
+              </Typography>
+            </TableCell>
+            <TableCell component="th">
+              <Typography
+                variant="subtitle1"
+                sx={{ color: 'text.secondary', fontWeight: 700 }}
+              >
+                {formatMessage('adminApiTokenList.createdAt')}
+              </Typography>
+            </TableCell>
+            <TableCell component="th" />
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {loading && (
+            <ListLoader
+              data-test="apiTokens-list-loader"
+              rowsNumber={3}
+              columnsNumber={3}
+            />
+          )}
+          {!loading &&
+            apiTokens.map((apiToken) => {
+              const createdAt = DateTime.fromMillis(
+                parseInt(apiToken.createdAt, 10),
+              );
 
-              <TableCell component="th">
-                <Typography
-                  variant="subtitle1"
-                  sx={{ color: 'text.secondary', fontWeight: 700 }}
-                >
-                  {formatMessage('adminApiTokenList.createdAt')}
-                </Typography>
-              </TableCell>
-
-              <TableCell component="th" />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading && (
-              <ListLoader
-                data-test="apiTokens-list-loader"
-                rowsNumber={3}
-                columnsNumber={3}
-              />
-            )}
-            {!loading &&
-              apiTokens.map((apiToken) => (
+              return (
                 <TableRow
                   key={apiToken.id}
                   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
@@ -65,32 +67,27 @@ export default function ApiTokenList({ loading, apiTokens }) {
                       {apiToken.token}
                     </Typography>
                   </TableCell>
-
                   <TableCell>
                     <Typography
                       variant="subtitle2"
                       data-test="api-token-created-at"
                     >
-                      {DateTime.fromMillis(
-                        parseInt(apiToken.createdAt, 10),
-                      ).toLocaleString(DateTime.DATETIME_MED)}
+                      {createdAt.isValid
+                        ? createdAt.toLocaleString(DateTime.DATETIME_MED)
+                        : ''}
                     </Typography>
                   </TableCell>
-
                   <TableCell>
                     <Stack direction="row" gap={1} justifyContent="right">
-                      <DeleteApiTokenButton
-                        data-test="api-token-delete"
-                        apiTokenId={apiToken.id}
-                      />
+                      <DeleteApiTokenButton apiTokenId={apiToken.id} />
                     </Stack>
                   </TableCell>
                 </TableRow>
-              ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </>
+              );
+            })}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 }
 

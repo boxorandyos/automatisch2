@@ -1,6 +1,6 @@
 import defineAction from '../../../../helpers/define-action.js';
 import runAgent from '@/helpers/agents.js';
-import Agent from '@/models/agent.ee.js';
+import Agent from '@/models/agent.js';
 
 export default defineAction({
   name: 'Run Agent',

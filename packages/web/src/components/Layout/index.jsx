@@ -11,9 +11,9 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import PropTypes from 'prop-types';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import SecurityIcon from '@mui/icons-material/Security';
-import CallToActionIcon from '@mui/icons-material/CallToAction';
-import DnsIcon from '@mui/icons-material/Dns';
+import DynamicFormIcon from '@mui/icons-material/DynamicForm';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import DnsIcon from '@mui/icons-material/Dns';
 
 import * as URLS from 'config/urls';
 import useFormatMessage from 'hooks/useFormatMessage';
@@ -31,28 +31,27 @@ const additionalDrawerLinkIcons = {
   ArrowBackIosNew: ArrowBackIosNewIcon,
 };
 
-const generateDrawerLinks = ({ isEnterprise, isCloud }) =>
-  [
+function createDrawerLinks() {
+  return [
     {
       Icon: SwapCallsIcon,
       primary: 'drawer.flows',
       to: URLS.FLOWS,
       dataTest: 'flows-page-drawer-link',
     },
-    isEnterprise && {
-      Icon: CallToActionIcon,
+    {
+      Icon: DynamicFormIcon,
       primary: 'drawer.forms',
       to: URLS.FORMS,
       dataTest: 'forms-page-drawer-link',
     },
-    isEnterprise &&
-      !isCloud && {
-        Icon: SmartToyIcon,
-        primary: 'drawer.agents',
-        to: URLS.AGENTS,
-        dataTest: 'agents-page-drawer-link',
-      },
-    isEnterprise && {
+    {
+      Icon: SmartToyIcon,
+      primary: 'drawer.agents',
+      to: URLS.AGENTS,
+      dataTest: 'agents-page-drawer-link',
+    },
+    {
       Icon: DnsIcon,
       primary: 'drawer.mcpServers',
       to: URLS.MCP_SERVERS,
@@ -70,7 +69,8 @@ const generateDrawerLinks = ({ isEnterprise, isCloud }) =>
       to: URLS.EXECUTIONS,
       dataTest: 'executions-page-drawer-link',
     },
-  ].filter(Boolean);
+  ];
+}
 
 const generateDrawerBottomLinks = ({
   disableNotificationsPage,
@@ -127,6 +127,8 @@ function PublicLayout({ children }) {
   const openDrawer = () => setDrawerOpen(true);
   const closeDrawer = () => setDrawerOpen(false);
 
+  const drawerLinks = React.useMemo(() => createDrawerLinks(), []);
+
   const bottomLinks = React.useMemo(() => {
     return generateDrawerBottomLinks({
       notificationBadgeContent: version.newVersionCount,
@@ -137,13 +139,6 @@ function PublicLayout({ children }) {
       formatMessage,
     });
   }, [formatMessage, config, version.newVersionCount]);
-
-  const drawerLinks = React.useMemo(() => {
-    return generateDrawerLinks({
-      isEnterprise: automatischInfo?.isEnterprise,
-      isCloud: automatischInfo?.isCloud,
-    });
-  }, [automatischInfo?.isEnterprise, automatischInfo?.isCloud]);
 
   return (
     <>

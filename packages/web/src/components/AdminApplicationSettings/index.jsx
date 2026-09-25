@@ -1,40 +1,37 @@
+import * as React from 'react';
 import PropTypes from 'prop-types';
-import { useMemo } from 'react';
-import useAppConfig from 'hooks/useAppConfig.ee';
-import useFormatMessage from 'hooks/useFormatMessage';
+import LoadingButton from '@mui/lab/LoadingButton';
 import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
-import LoadingButton from '@mui/lab/LoadingButton';
 
 import Form from 'components/Form';
-import { Switch } from './style';
-import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
+import Switch from 'components/Switch';
 import useAdminCreateAppConfig from 'hooks/useAdminCreateAppConfig';
 import useAdminUpdateAppConfig from 'hooks/useAdminUpdateAppConfig';
 import useApp from 'hooks/useApp';
+import useAppConfig from 'hooks/useAppConfig';
+import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
+import useFormatMessage from 'hooks/useFormatMessage';
 
-function AdminApplicationSettings({ appKey }) {
+export default function AdminApplicationSettings({ appKey }) {
   const formatMessage = useFormatMessage();
   const enqueueSnackbar = useEnqueueSnackbar();
-
-  const { data: appData, loading: appLoading } = useApp(appKey);
+  const { data: appData, isLoading: appLoading } = useApp(appKey);
   const app = appData?.data || {};
-
-  const { data: appConfig, isLoading: loading } = useAppConfig(appKey);
-
-  const { mutateAsync: createAppConfig, isPending: isCreateAppConfigPending } =
+  const { data, isLoading } = useAppConfig(appKey);
+  const appConfig = data?.data;
+  const { mutateAsync: createConfig, isPending: isCreating } =
     useAdminCreateAppConfig(appKey);
-
-  const { mutateAsync: updateAppConfig, isPending: isUpdateAppConfigPending } =
+  const { mutateAsync: updateConfig, isPending: isUpdating } =
     useAdminUpdateAppConfig(appKey);
 
   const handleSubmit = async (values) => {
     try {
-      if (!appConfig?.data) {
-        await createAppConfig(values);
+      if (appConfig) {
+        await updateConfig(values);
       } else {
-        await updateAppConfig(values);
+        await createConfig(values);
       }
 
       enqueueSnackbar(formatMessage('adminAppsSettings.successfullySaved'), {
@@ -43,21 +40,26 @@ function AdminApplicationSettings({ appKey }) {
           'data-test': 'snackbar-save-admin-apps-settings-success',
         },
       });
-    } catch {
-      throw new Error('Failed while saving!');
+    } catch (error) {
+      const errors = error?.response?.data?.errors;
+      throw errors || error;
     }
   };
 
-  const defaultValues = useMemo(
+  const defaultValues = React.useMemo(
     () => ({
       ...(app.supportsOauthClients && {
         useOnlyPredefinedAuthClients:
-          appConfig?.data?.useOnlyPredefinedAuthClients || false,
+          appConfig?.useOnlyPredefinedAuthClients || false,
       }),
-      disabled: appConfig?.data?.disabled || false,
+      disabled: appConfig?.disabled || false,
     }),
-    [appConfig?.data, app.supportsOauthClients],
+    [appConfig, app.supportsOauthClients],
   );
+
+  if (isLoading || appLoading) {
+    return null;
+  }
 
   return (
     <Form
@@ -77,7 +79,6 @@ function AdminApplicationSettings({ appKey }) {
                     labelPlacement: 'start',
                   }}
                 />
-
                 <Divider />
               </>
             )}
@@ -99,20 +100,18 @@ function AdminApplicationSettings({ appKey }) {
               variant="contained"
               color="primary"
               sx={{ boxShadow: 2, mt: 5 }}
-              loading={isCreateAppConfigPending || isUpdateAppConfigPending}
-              disabled={!isDirty || loading || appLoading}
+              loading={isCreating || isUpdating}
+              disabled={!isDirty || isLoading || appLoading}
             >
               {formatMessage('adminAppsSettings.save')}
             </LoadingButton>
           </Stack>
         </Paper>
       )}
-    ></Form>
+    />
   );
 }
 
 AdminApplicationSettings.propTypes = {
   appKey: PropTypes.string.isRequired,
 };
-
-export default AdminApplicationSettings;

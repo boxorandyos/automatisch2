@@ -8,14 +8,14 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import { FieldPropType } from 'propTypes/propTypes';
-import useFormatMessage from 'hooks/useFormatMessage';
+import Form from 'components/Form';
 import InputCreator from 'components/InputCreator';
 import Switch from 'components/Switch';
 import TextField from 'components/TextField';
-import { Form } from './style';
+import useFormatMessage from 'hooks/useFormatMessage';
+import { FieldPropType } from 'propTypes/propTypes';
 
-function AdminApplicationOAuthClientDialog(props) {
+export default function AdminApplicationOAuthClientDialog(props) {
   const {
     error,
     onClose,
@@ -28,6 +28,7 @@ function AdminApplicationOAuthClientDialog(props) {
     disabled = false,
   } = props;
   const formatMessage = useFormatMessage();
+
   return (
     <Dialog open={true} onClose={onClose}>
       <DialogTitle>{title}</DialogTitle>
@@ -76,7 +77,7 @@ function AdminApplicationOAuthClientDialog(props) {
                   </LoadingButton>
                 </>
               )}
-            ></Form>
+            />
           </DialogContentText>
         )}
       </DialogContent>
@@ -97,5 +98,3 @@ AdminApplicationOAuthClientDialog.propTypes = {
   defaultValues: PropTypes.object.isRequired,
   disabled: PropTypes.bool,
 };
-
-export default AdminApplicationOAuthClientDialog;

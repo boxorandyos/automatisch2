@@ -3,7 +3,7 @@ import api from 'helpers/api';
 
 export default function useOAuthClients(appKey) {
   const query = useQuery({
-    queryKey: ['apps', appKey, 'oauth-clients'],
+    queryKey: ['apps', appKey, 'oauthClients'],
     queryFn: async ({ signal }) => {
       const { data } = await api.get(`/v1/apps/${appKey}/oauth-clients`, {
         signal,

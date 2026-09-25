@@ -1,6 +1,6 @@
 import buildTriggerStepContext from '@/engine/trigger/context.js';
 import Execution from '@/models/execution.js';
-import McpToolExecuton from '@/models/mcp-tool-execution.ee.js';
+import McpToolExecution from '@/models/mcp-tool-execution.js';
 
 const processTriggerStep = async ({
   flowId,
@@ -32,9 +32,9 @@ const processTriggerStep = async ({
     });
 
   if (triggeredByMcp && step?.appKey === 'mcp' && step?.key === 'mcpTool') {
-    const mcpToolExecution = await McpToolExecuton.query().insert({
+    const mcpToolExecution = await McpToolExecution.query().insert({
       mcpToolId,
-      dataIn: initialDataItem?.raw,
+      dataIn: JSON.stringify(initialDataItem?.raw ?? {}),
       status: 'success',
     });
 

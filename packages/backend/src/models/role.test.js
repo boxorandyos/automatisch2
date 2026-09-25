@@ -6,7 +6,6 @@ import User from '@/models/user.js';
 import { createRole } from '@/factories/role.js';
 import { createPermission } from '@/factories/permission.js';
 import { createUser } from '@/factories/user.js';
-import { createSamlAuthProvider } from '@/factories/saml-auth-provider.ee.js';
 
 describe('Role model', () => {
   it('tableName should return correct name', () => {
@@ -223,40 +222,17 @@ describe('Role model', () => {
     });
   });
 
-  describe('assertNoConfigurationUsage', () => {
-    it('should reject with an error when the role is used in configuration', async () => {
-      const role = await createRole();
-      await createSamlAuthProvider({ defaultRoleId: role.id });
 
-      await expect(() =>
-        role.assertNoConfigurationUsage()
-      ).rejects.toThrowError(
-        'samlAuthProvider: You need to change the default role in the SAML configuration before deleting this role.'
-      );
-    });
-
-    it('should resolve when the role does not have any users', async () => {
-      const role = await createRole();
-
-      expect(await role.assertNoConfigurationUsage()).toBe(undefined);
-    });
-  });
-
-  it('assertRoleIsNotUsed should call assertNoRoleUserExists and assertNoConfigurationUsage', async () => {
+  it('assertRoleIsNotUsed should call assertNoRoleUserExists', async () => {
     const role = new Role();
 
     const assertNoRoleUserExistsSpy = vi
       .spyOn(role, 'assertNoRoleUserExists')
       .mockResolvedValue();
 
-    const assertNoConfigurationUsageSpy = vi
-      .spyOn(role, 'assertNoConfigurationUsage')
-      .mockResolvedValue();
-
     await role.assertRoleIsNotUsed();
 
     expect(assertNoRoleUserExistsSpy).toHaveBeenCalledOnce();
-    expect(assertNoConfigurationUsageSpy).toHaveBeenCalledOnce();
   });
 
   describe('$beforeDelete', () => {

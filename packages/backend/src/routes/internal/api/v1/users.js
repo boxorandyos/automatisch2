@@ -6,14 +6,15 @@ import getCurrentUserAction from '@/controllers/internal/api/v1/users/get-curren
 import updateCurrentUserAction from '@/controllers/internal/api/v1/users/update-current-user.js';
 import updateCurrentUserPasswordAction from '@/controllers/internal/api/v1/users/update-current-user-password.js';
 import deleteCurrentUserAction from '@/controllers/internal/api/v1/users/delete-current-user.js';
-import getUserTrialAction from '@/controllers/internal/api/v1/users/get-user-trial.ee.js';
 import getAppsAction from '@/controllers/internal/api/v1/users/get-apps.js';
-import getInvoicesAction from '@/controllers/internal/api/v1/users/get-invoices.ee.js';
-import getSubscriptionAction from '@/controllers/internal/api/v1/users/get-subscription.ee.js';
-import getPlanAndUsageAction from '@/controllers/internal/api/v1/users/get-plan-and-usage.ee.js';
+import getInvoicesAction from '@/controllers/internal/api/v1/users/get-invoices.js';
+import getPlanAndUsageAction from '@/controllers/internal/api/v1/users/get-plan-and-usage.js';
+import getSubscriptionAction from '@/controllers/internal/api/v1/users/get-subscription.js';
+import getUserTrialAction from '@/controllers/internal/api/v1/users/get-user-trial.js';
 import acceptInvitationAction from '@/controllers/internal/api/v1/users/accept-invitation.js';
 import forgotPasswordAction from '@/controllers/internal/api/v1/users/forgot-password.js';
 import resetPasswordAction from '@/controllers/internal/api/v1/users/reset-password.js';
+import registerUserAction from '@/controllers/internal/api/v1/users/register-user.js';
 
 const router = Router();
 
@@ -27,32 +28,30 @@ router.patch(
 );
 
 router.get('/:userId/apps', authenticateUser, authorizeUser, getAppsAction);
-router.get('/invoices', authenticateUser, checkIsCloud, getInvoicesAction);
-router.delete('/:userId', authenticateUser, deleteCurrentUserAction);
-
 router.get(
-  '/:userId/trial',
+  '/:userId/invoices',
   authenticateUser,
   checkIsCloud,
-  getUserTrialAction
+  getInvoicesAction
 );
-
-router.get(
-  '/:userId/subscription',
-  authenticateUser,
-  checkIsCloud,
-  getSubscriptionAction
-);
-
 router.get(
   '/:userId/plan-and-usage',
   authenticateUser,
   checkIsCloud,
   getPlanAndUsageAction
 );
+router.get(
+  '/:userId/subscription',
+  authenticateUser,
+  checkIsCloud,
+  getSubscriptionAction
+);
+router.get('/:userId/trial', authenticateUser, checkIsCloud, getUserTrialAction);
+router.delete('/:userId', authenticateUser, deleteCurrentUserAction);
 
 router.post('/invitation', acceptInvitationAction);
 router.post('/forgot-password', forgotPasswordAction);
 router.post('/reset-password', resetPasswordAction);
+router.post('/register', registerUserAction);
 
 export default router;

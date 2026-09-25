@@ -1,7 +1,7 @@
 import { renderObject } from '@/helpers/renderer.js';
 
 export default async (request, response) => {
-  const { templateId } = request.query;
+  const templateId = request.query.templateId || request.body?.templateId;
 
   const flow = templateId
     ? await request.currentUser.createFlowFromTemplate(templateId)

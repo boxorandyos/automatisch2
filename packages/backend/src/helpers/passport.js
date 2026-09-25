@@ -1,14 +1,50 @@
 import { URL } from 'node:url';
-import { MultiSamlStrategy } from '@node-saml/passport-saml';
+
 import passport from 'passport';
+import { MultiSamlStrategy } from '@node-saml/passport-saml';
 
 import appConfig from '@/config/app.js';
 import createAuthTokenByUserId from '@/helpers/create-auth-token-by-user-id.js';
-import SamlAuthProvider from '@/models/saml-auth-provider.ee.js';
-import AccessToken from '@/models/access-token.js';
-import findOrCreateUserBySamlIdentity from '@/helpers/find-or-create-user-by-saml-identity.ee.js';
+import findOrCreateUserBySamlIdentity from '@/helpers/find-or-create-user-by-saml-identity.js';
+import SamlAuthProvider from '@/models/saml-auth-provider.js';
 
-const asyncNoop = async () => {};
+const findSamlAuthProvider = async (issuerOrId) => {
+  const decoded = decodeURIComponent(issuerOrId);
+
+  return await SamlAuthProvider.query()
+    .where({ active: true })
+    .andWhere((builder) => {
+      builder.where('issuer', decoded).orWhere('id', decoded);
+    })
+    .first()
+    .throwIfNotFound();
+};
+
+const getSamlOptions = async (request, done) => {
+  try {
+    const samlAuthProvider = await findSamlAuthProvider(request.params.issuer);
+
+    request.samlAuthProvider = samlAuthProvider;
+
+    return done(null, samlAuthProvider.config);
+  } catch (error) {
+    return done(error);
+  }
+};
+
+const verify = async (request, profile, done) => {
+  try {
+    const samlAuthProvider =
+      request.samlAuthProvider ||
+      (await findSamlAuthProvider(request.params.issuer));
+
+    const user = await findOrCreateUserBySamlIdentity(profile, samlAuthProvider);
+
+    return done(null, { user, profile });
+  } catch (error) {
+    return done(error);
+  }
+};
 
 export default function configurePassport(app) {
   app.use(
@@ -21,80 +57,9 @@ export default function configurePassport(app) {
     new MultiSamlStrategy(
       {
         passReqToCallback: true,
-        getSamlOptions: async function (request, done) {
-          // This is a workaround to avoid session logout which passport-saml enforces
-          request.logout = asyncNoop;
-          request.logOut = asyncNoop;
-
-          const { issuer } = request.params;
-          const notFoundIssuer = new Error('Issuer cannot be found!');
-
-          if (!issuer) return done(notFoundIssuer);
-
-          const authProvider = await SamlAuthProvider.query().findOne({
-            issuer: request.params.issuer,
-          });
-
-          if (!authProvider) {
-            return done(notFoundIssuer);
-          }
-
-          return done(null, authProvider.config);
-        },
+        getSamlOptions,
       },
-      async function signonVerify(request, user, done) {
-        const { issuer } = request.params;
-        const notFoundIssuer = new Error('Issuer cannot be found!');
-
-        if (!issuer) return done(notFoundIssuer);
-
-        const authProvider = await SamlAuthProvider.query().findOne({
-          issuer: request.params.issuer,
-        });
-
-        if (!authProvider) {
-          return done(notFoundIssuer);
-        }
-
-        const foundUserWithIdentity = await findOrCreateUserBySamlIdentity(
-          user,
-          authProvider
-        );
-
-        request.samlSessionId = user.sessionIndex;
-
-        return done(null, foundUserWithIdentity);
-      },
-      async function logoutVerify(request, user, done) {
-        const { issuer } = request.params;
-        const notFoundIssuer = new Error('Issuer cannot be found!');
-
-        if (!issuer) return done(notFoundIssuer);
-
-        const authProvider = await SamlAuthProvider.query().findOne({
-          issuer: request.params.issuer,
-        });
-
-        if (!authProvider) {
-          return done(notFoundIssuer);
-        }
-
-        const foundUserWithIdentity = await findOrCreateUserBySamlIdentity(
-          user,
-          authProvider
-        );
-
-        const accessToken = await AccessToken.query()
-          .findOne({
-            revoked_at: null,
-            saml_session_id: user.sessionIndex,
-          })
-          .throwIfNotFound();
-
-        await accessToken.revoke();
-
-        return done(null, foundUserWithIdentity);
-      }
+      verify
     )
   );
 
@@ -102,7 +67,7 @@ export default function configurePassport(app) {
     '/login/saml/:issuer',
     passport.authenticate('saml', {
       session: false,
-      successRedirect: '/',
+      failureRedirect: `${appConfig.webAppUrl}/login`,
     })
   );
 
@@ -110,25 +75,19 @@ export default function configurePassport(app) {
     '/login/saml/:issuer/callback',
     passport.authenticate('saml', {
       session: false,
+      failureRedirect: `${appConfig.webAppUrl}/login`,
     }),
     async (request, response) => {
+      const { user, profile } = request.currentUser;
       const token = await createAuthTokenByUserId(
-        request.currentUser.id,
-        request.samlSessionId
+        user.id,
+        profile?.sessionIndex
       );
 
-      const redirectUrl = new URL(
-        `/login/callback?token=${token}`,
-        appConfig.webAppUrl
-      ).toString();
-      response.redirect(redirectUrl);
-    }
-  );
+      const redirectUrl = new URL(`${appConfig.webAppUrl}/login/callback`);
+      redirectUrl.searchParams.set('token', token);
 
-  app.post(
-    '/logout/saml/:issuer',
-    passport.authenticate('saml', {
-      session: false,
-    })
+      response.redirect(redirectUrl.toString());
+    }
   );
 }

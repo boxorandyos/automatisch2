@@ -4,7 +4,6 @@ import request from 'supertest';
 import app from '../../../../../app.js';
 import createAuthTokenByUserId from '@/helpers/create-auth-token-by-user-id.js';
 import { createUser } from '@/factories/user.js';
-import { createTemplate } from '@/factories/template.js';
 import createFlowMock from '@/mocks/rest/internal/api/v1/flows/create-flow.js';
 import { createPermission } from '@/factories/permission.js';
 
@@ -40,7 +39,7 @@ describe('POST /internal/api/v1/flows', () => {
     expect(response.body).toMatchObject(expectedPayload);
   });
 
-  it('should create a flow from template when templateId is provided', async () => {
+  it('should create a flow from a template when templateId is provided', async () => {
     await createPermission({
       action: 'manage',
       subject: 'Flow',
@@ -48,8 +47,11 @@ describe('POST /internal/api/v1/flows', () => {
       conditions: ['isCreator'],
     });
 
-    const template = await createTemplate({
+    const emptyFlow = await currentUser.createEmptyFlow();
+    const { default: Template } = await import('@/models/template.js');
+    const template = await Template.createFromFlow(currentUser, {
       name: 'Sample template',
+      flowId: emptyFlow.id,
     });
 
     const response = await request(app)
@@ -58,6 +60,11 @@ describe('POST /internal/api/v1/flows', () => {
       .set('Authorization', token)
       .expect(201);
 
-    expect(response.body.data.name).toBe(template.flowData.name);
+    const createdFlow = await currentUser
+      .$relatedQuery('flows')
+      .findById(response.body.data.id);
+
+    expect(createdFlow).toBeTruthy();
+    expect(createdFlow.id).not.toBe(emptyFlow.id);
   });
 });

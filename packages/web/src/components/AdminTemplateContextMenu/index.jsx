@@ -4,13 +4,12 @@ import PropTypes from 'prop-types';
 import * as React from 'react';
 
 import Can from 'components/Can';
-import useAdminDeleteTemplate from 'hooks/useAdminDeleteTemplate.ee';
+import useAdminDeleteTemplate from 'hooks/useAdminDeleteTemplate';
 import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 import useFormatMessage from 'hooks/useFormatMessage';
 
-function AdminTemplateContextMenu(props) {
+export default function AdminTemplateContextMenu(props) {
   const { templateId, onClose, anchorEl } = props;
-
   const enqueueSnackbar = useEnqueueSnackbar();
   const formatMessage = useFormatMessage();
   const { mutateAsync: deleteTemplate } = useAdminDeleteTemplate(templateId);
@@ -31,6 +30,7 @@ function AdminTemplateContextMenu(props) {
       enqueueSnackbar(error?.message || formatMessage('genericError'), {
         variant: 'error',
       });
+      onClose();
     }
   }, [deleteTemplate, enqueueSnackbar, formatMessage, onClose]);
 
@@ -57,8 +57,6 @@ AdminTemplateContextMenu.propTypes = {
   onClose: PropTypes.func.isRequired,
   anchorEl: PropTypes.oneOfType([
     PropTypes.func,
-    PropTypes.shape({ current: PropTypes.instanceOf(window.Element) }),
+    PropTypes.shape({ current: PropTypes.any }),
   ]).isRequired,
 };
-
-export default AdminTemplateContextMenu;

@@ -8,34 +8,35 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import PaymentIcon from '@mui/icons-material/Payment';
 import * as URLS from 'config/urls';
-import useAutomatischInfo from 'hooks/useAutomatischInfo';
 import useFormatMessage from 'hooks/useFormatMessage';
+import useCloud from 'hooks/useCloud';
 import AppBar from 'components/AppBar';
 import Drawer from 'components/Drawer';
 
 function createDrawerLinks({ isCloud }) {
-  const items = [
+  const links = [
     {
       Icon: AccountCircleIcon,
       primary: 'settingsDrawer.myProfile',
       to: URLS.SETTINGS_PROFILE,
     },
   ];
+
   if (isCloud) {
-    items.push({
+    links.push({
       Icon: PaymentIcon,
       primary: 'settingsDrawer.billingAndUsage',
       to: URLS.SETTINGS_BILLING_AND_USAGE,
     });
   }
-  return items;
+
+  return links;
 }
 
 function SettingsLayout({ children }) {
-  const { data: automatischInfo } = useAutomatischInfo();
-  const isCloud = automatischInfo?.data.isCloud;
   const theme = useTheme();
   const formatMessage = useFormatMessage();
+  const isCloud = useCloud();
   const matchSmallScreens = useMediaQuery(theme.breakpoints.down('lg'));
   const [isDrawerOpen, setDrawerOpen] = React.useState(!matchSmallScreens);
   const openDrawer = () => setDrawerOpen(true);

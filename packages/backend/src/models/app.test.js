@@ -3,7 +3,6 @@ import fs from 'fs';
 import App from '@/models/app.js';
 import * as getAppModule from '@/helpers/get-app.js';
 import * as appInfoConverterModule from '@/helpers/app-info-converter.js';
-import * as licenseModule from '@/helpers/license.ee.js';
 
 describe('App model', () => {
   it('folderPath should return correct path', () => {
@@ -17,7 +16,7 @@ describe('App model', () => {
   });
 
   describe('list', () => {
-    it('should list all applications including enterprise ones when license is valid', async () => {
+    it('should list all applications', async () => {
       const originalExistsSync = fs.existsSync;
       const mockExistsSync = vi.spyOn(fs, 'existsSync');
 
@@ -28,37 +27,17 @@ describe('App model', () => {
 
         return originalExistsSync.call(fs, path);
       });
-
-      vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(true);
 
       const appList = await App.list();
 
       expect(appList).toMatchSnapshot();
       expect(appList).toContain('forms');
-    });
-
-    it('should exclude enterprise apps when license is not valid', async () => {
-      const originalExistsSync = fs.existsSync;
-      const mockExistsSync = vi.spyOn(fs, 'existsSync');
-
-      mockExistsSync.mockImplementation((path) => {
-        if (path.endsWith('private-apps')) {
-          return false; // Private apps directory doesn't exist (like CI)
-        }
-
-        return originalExistsSync.call(fs, path);
-      });
-
-      vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(false);
-
-      const appList = await App.list();
-
-      expect(appList).toMatchSnapshot();
-      expect(appList).not.toContain('forms');
+      expect(appList).toContain('mcp');
+      expect(appList).toContain('agents');
     });
 
     describe('directory filtering', () => {
-      it('should only include directories with index.js or index.ee.js', async () => {
+      it('should only include directories with index.js', async () => {
         const mockReaddirSync = vi.spyOn(fs, 'readdirSync');
         const mockStatSync = vi.spyOn(fs, 'statSync');
         const mockExistsSync = vi.spyOn(fs, 'existsSync');
@@ -76,8 +55,7 @@ describe('App model', () => {
         mockExistsSync.mockImplementation((path) => {
           if (path.includes('private-apps')) return false;
           if (path.includes('valid-app/index.js')) return true;
-          if (path.includes('enterprise-app/index.ee.js')) return true;
-          if (path.includes('incomplete-app/index.js')) return false;
+                    if (path.includes('incomplete-app/index.js')) return false;
           return false;
         });
 
@@ -86,11 +64,10 @@ describe('App model', () => {
           isDirectory: () => !path.includes('README.md'),
         }));
 
-        vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(true);
-
         const appList = await App.list();
 
-        expect(appList).toEqual(['enterprise-app', 'valid-app']);
+        expect(appList).toEqual(['valid-app']);
+        expect(appList).not.toContain('enterprise-app');
         expect(appList).not.toContain('.git');
         expect(appList).not.toContain('README.md');
         expect(appList).not.toContain('incomplete-app');
@@ -112,8 +89,6 @@ describe('App model', () => {
         mockStatSync.mockImplementation((path) => ({
           isDirectory: () => !path.includes('file.txt'),
         }));
-
-        vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(true);
 
         const appList = await App.list();
 
@@ -149,8 +124,6 @@ describe('App model', () => {
           isDirectory: () => true,
         }));
 
-        vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(true);
-
         const appList = await App.list();
 
         expect(appList).toContain('deepl');
@@ -180,79 +153,9 @@ describe('App model', () => {
           isDirectory: () => true,
         }));
 
-        vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(true);
-
         const appList = await App.list();
 
         expect(appList).toEqual(['deepl']);
-      });
-    });
-
-    describe('license filtering with private apps', () => {
-      it('should include private enterprise apps when license is valid', async () => {
-        const mockReaddirSync = vi.spyOn(fs, 'readdirSync');
-        const mockStatSync = vi.spyOn(fs, 'statSync');
-        const mockExistsSync = vi.spyOn(fs, 'existsSync');
-
-        mockReaddirSync.mockImplementation((path) => {
-          if (path.includes('/apps') && !path.includes('private-apps'))
-            return ['deepl'];
-          if (path.includes('private-apps')) return ['forms'];
-          return [];
-        });
-
-        mockExistsSync.mockImplementation((path) => {
-          if (path.includes('private-apps') && !path.includes('index'))
-            return true;
-          if (path.includes('deepl/index.js')) return true;
-          if (path.includes('forms/index.ee.js')) return true;
-          return false;
-        });
-
-        mockStatSync.mockImplementation(() => ({
-          isDirectory: () => true,
-        }));
-
-        vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(true);
-
-        const appList = await App.list();
-
-        expect(appList).toContain('forms');
-        expect(appList).toContain('deepl');
-      });
-
-      it('should exclude private enterprise apps when license is invalid', async () => {
-        const mockReaddirSync = vi.spyOn(fs, 'readdirSync');
-        const mockStatSync = vi.spyOn(fs, 'statSync');
-        const mockExistsSync = vi.spyOn(fs, 'existsSync');
-
-        mockReaddirSync.mockImplementation((path) => {
-          if (path.includes('/apps') && !path.includes('private-apps'))
-            return ['deepl'];
-          if (path.includes('private-apps')) return ['forms', 'webhook'];
-          return [];
-        });
-
-        mockExistsSync.mockImplementation((path) => {
-          if (path.includes('private-apps') && !path.includes('index'))
-            return true;
-          if (path.includes('deepl/index.js')) return true;
-          if (path.includes('forms/index.ee.js')) return true;
-          if (path.includes('webhook/index.js')) return true;
-          return false;
-        });
-
-        mockStatSync.mockImplementation(() => ({
-          isDirectory: () => true,
-        }));
-
-        vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(false);
-
-        const appList = await App.list();
-
-        expect(appList).not.toContain('forms');
-        expect(appList).toContain('webhook');
-        expect(appList).toContain('deepl');
       });
     });
 
@@ -280,44 +183,11 @@ describe('App model', () => {
           isDirectory: () => true,
         }));
 
-        vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(true);
-
         const appList = await App.list();
 
         expect(appList).toEqual(['airtable', 'deepl', 'github', 'webhooks']);
       });
 
-      it('should sort mixed regular and enterprise apps correctly', async () => {
-        const mockReaddirSync = vi.spyOn(fs, 'readdirSync');
-        const mockStatSync = vi.spyOn(fs, 'statSync');
-        const mockExistsSync = vi.spyOn(fs, 'existsSync');
-
-        mockReaddirSync.mockImplementation((path) => {
-          if (path.includes('/apps') && !path.includes('private-apps'))
-            return ['webhooks', 'forms'];
-          if (path.includes('private-apps')) return ['airtable'];
-          return [];
-        });
-
-        mockExistsSync.mockImplementation((path) => {
-          if (path.includes('private-apps') && !path.includes('index'))
-            return true;
-          if (path.includes('webhooks/index.js')) return true;
-          if (path.includes('forms/index.ee.js')) return true;
-          if (path.includes('airtable/index.js')) return true;
-          return false;
-        });
-
-        mockStatSync.mockImplementation(() => ({
-          isDirectory: () => true,
-        }));
-
-        vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(true);
-
-        const appList = await App.list();
-
-        expect(appList).toEqual(['airtable', 'forms', 'webhooks']);
-      });
     });
 
     describe('private apps directory file filtering', () => {
@@ -347,8 +217,6 @@ describe('App model', () => {
           isDirectory: () => !path.includes('some-file.txt'),
         }));
 
-        vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(true);
-
         const appList = await App.list();
 
         // Should only include the directory, not the file
@@ -356,37 +224,8 @@ describe('App model', () => {
         expect(appList).not.toContain('some-file.txt');
       });
 
-      it('should handle apps with only index.ee.js files', async () => {
-        const mockReaddirSync = vi.spyOn(fs, 'readdirSync');
-        const mockStatSync = vi.spyOn(fs, 'statSync');
-        const mockExistsSync = vi.spyOn(fs, 'existsSync');
 
-        mockReaddirSync.mockImplementation((path) => {
-          if (path.includes('/apps') && !path.includes('private-apps'))
-            return ['enterprise-app'];
-          if (path.includes('private-apps')) return [];
-          return [];
-        });
-
-        mockExistsSync.mockImplementation((path) => {
-          if (path.includes('private-apps')) return false;
-          if (path.includes('enterprise-app/index.js')) return false;
-          if (path.includes('enterprise-app/index.ee.js')) return true;
-          return false;
-        });
-
-        mockStatSync.mockImplementation(() => ({
-          isDirectory: () => true,
-        }));
-
-        vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(true);
-
-        const appList = await App.list();
-
-        expect(appList).toContain('enterprise-app');
-      });
-
-      it('should handle apps with neither index.js nor index.ee.js', async () => {
+      it('should handle apps with neither index.js', async () => {
         const mockReaddirSync = vi.spyOn(fs, 'readdirSync');
         const mockStatSync = vi.spyOn(fs, 'statSync');
         const mockExistsSync = vi.spyOn(fs, 'existsSync');
@@ -406,8 +245,6 @@ describe('App model', () => {
         mockStatSync.mockImplementation(() => ({
           isDirectory: () => true,
         }));
-
-        vi.spyOn(licenseModule, 'hasValidLicense').mockResolvedValue(true);
 
         const appList = await App.list();
 

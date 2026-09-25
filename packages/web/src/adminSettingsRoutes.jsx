@@ -1,25 +1,24 @@
 import { Navigate, Route } from 'react-router-dom';
 
-import EnterpriseAdminGuard from 'components/EnterpriseAdminGuard/index.ee';
 import AdminGuard from 'components/AdminGuard';
+import EnterpriseAdminGuard from 'components/EnterpriseAdminGuard';
 import * as URLS from 'config/urls';
-import AdminApiTokensPage from 'pages/AdminApiTokens/index.ee';
-import AdminApplication from 'pages/AdminApplication/index.ee';
-import AdminApplications from 'pages/AdminApplications/index.ee';
-import AdminCreateTemplate from 'pages/AdminCreateTemplate/index.ee';
-import AdminTemplates from 'pages/AdminTemplates/index.ee';
-import AdminUpdateTemplate from 'pages/AdminUpdateTemplate/index.ee';
-import AiConfig from 'pages/AiConfig/index.ee';
-import Authentication from 'pages/Authentication/index.ee';
-import CreateRole from 'pages/CreateRole/index.ee';
+import AdminApiTokens from 'pages/AdminApiTokens';
+import AdminApplication from 'pages/AdminApplication';
+import AdminApplications from 'pages/AdminApplications';
+import AdminCreateTemplate from 'pages/AdminCreateTemplate';
+import AdminTemplates from 'pages/AdminTemplates';
+import AdminUpdateTemplate from 'pages/AdminUpdateTemplate';
+import AiConfig from 'pages/AiConfig';
+import Authentication from 'pages/Authentication';
+import CreateRole from 'pages/CreateRole';
 import CreateUser from 'pages/CreateUser';
-import EditRole from 'pages/EditRole/index.ee';
+import EditRole from 'pages/EditRole';
 import EditUser from 'pages/EditUser';
-import Roles from 'pages/Roles/index.ee';
-import UserInterface from 'pages/UserInterface/index.ee';
+import Roles from 'pages/Roles';
+import UserInterface from 'pages/UserInterface';
 import Users from 'pages/Users';
 
-// TODO: consider introducing redirections to `/` as fallback
 export default (
   <>
     <Route
@@ -95,19 +94,19 @@ export default (
     />
 
     <Route
-      path={URLS.ADMIN_APPS}
+      path={URLS.AI_CONFIG}
       element={
         <EnterpriseAdminGuard>
-          <AdminApplications />
+          <AiConfig />
         </EnterpriseAdminGuard>
       }
     />
 
     <Route
-      path={URLS.AI_CONFIG}
+      path={URLS.ADMIN_APPS}
       element={
         <EnterpriseAdminGuard>
-          <AiConfig />
+          <AdminApplications />
         </EnterpriseAdminGuard>
       }
     />
@@ -122,7 +121,7 @@ export default (
     />
 
     <Route
-      path={`${URLS.ADMIN_TEMPLATES}/*`}
+      path={URLS.ADMIN_TEMPLATES}
       element={
         <EnterpriseAdminGuard>
           <AdminTemplates />
@@ -131,7 +130,7 @@ export default (
     />
 
     <Route
-      path={`${URLS.ADMIN_CREATE_TEMPLATE_PATTERN}/*`}
+      path={URLS.ADMIN_CREATE_TEMPLATE_PATTERN}
       element={
         <EnterpriseAdminGuard>
           <AdminCreateTemplate />
@@ -140,7 +139,7 @@ export default (
     />
 
     <Route
-      path={`${URLS.ADMIN_UPDATE_TEMPLATE_PATTERN}/*`}
+      path={URLS.ADMIN_UPDATE_TEMPLATE_PATTERN}
       element={
         <EnterpriseAdminGuard>
           <AdminUpdateTemplate />
@@ -149,10 +148,10 @@ export default (
     />
 
     <Route
-      path={`${URLS.ADMIN_API_TOKENS}/*`}
+      path={URLS.ADMIN_API_TOKENS}
       element={
         <EnterpriseAdminGuard>
-          <AdminApiTokensPage />
+          <AdminApiTokens />
         </EnterpriseAdminGuard>
       }
     />

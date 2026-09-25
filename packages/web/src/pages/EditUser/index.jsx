@@ -4,8 +4,8 @@ import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
-import MuiTextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
+import MuiTextField from '@mui/material/TextField';
 import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -19,16 +19,15 @@ import PageTitle from 'components/PageTitle';
 import TextField from 'components/TextField';
 import * as URLS from 'config/urls';
 import useFormatMessage from 'hooks/useFormatMessage';
-import useRoles from 'hooks/useRoles.ee';
 import useAdminUpdateUser from 'hooks/useAdminUpdateUser';
 import useAdminUser from 'hooks/useAdminUser';
-import useIsCurrentUserEnterpriseAdmin from 'hooks/useIsCurrentUserEnterpriseAdmin';
+import useRoles from 'hooks/useRoles';
 
 function generateRoleOptions(roles) {
   return roles?.map(({ name: label, id: value }) => ({ label, value }));
 }
 
-const getValidationSchema = (formatMessage, canUpdateRole) => {
+const getValidationSchema = (formatMessage) => {
   const getMandatoryFieldMessage = (fieldTranslationId) =>
     formatMessage('userForm.mandatoryInput', {
       inputName: formatMessage(fieldTranslationId),
@@ -44,13 +43,7 @@ const getValidationSchema = (formatMessage, canUpdateRole) => {
       .trim()
       .email(formatMessage('userForm.validateEmail'))
       .required(getMandatoryFieldMessage('userForm.email')),
-    ...(canUpdateRole
-      ? {
-          roleId: yup
-            .string()
-            .required(getMandatoryFieldMessage('userForm.role')),
-        }
-      : {}),
+    roleId: yup.string().required(getMandatoryFieldMessage('userForm.role')),
   });
 };
 
@@ -65,11 +58,10 @@ export default function EditUser() {
   const { userId } = useParams();
   const { mutateAsync: updateUser, isPending: isAdminUpdateUserPending } =
     useAdminUpdateUser(userId);
-  const isCurrentUserEnterpriseAdmin = useIsCurrentUserEnterpriseAdmin();
   const { data: userData, isLoading: isUserLoading } = useAdminUser({ userId });
   const user = userData?.data;
-  const { data, isLoading: isRolesLoading } = useRoles();
-  const roles = data?.data;
+  const { data: rolesData, isLoading: isRolesLoading } = useRoles();
+  const roles = rolesData?.data;
   const enqueueSnackbar = useEnqueueSnackbar();
   const navigate = useNavigate();
 
@@ -124,17 +116,12 @@ export default function EditUser() {
                   ? {
                       fullName: user.fullName,
                       email: user.email,
-                      roleId: user.role.id,
+                      roleId: user.role?.id || user.roleId,
                     }
                   : defaultValues
               }
               onSubmit={handleUserUpdate}
-              resolver={yupResolver(
-                getValidationSchema(
-                  formatMessage,
-                  isCurrentUserEnterpriseAdmin,
-                ),
-              )}
+              resolver={yupResolver(getValidationSchema(formatMessage))}
               noValidate
               render={({ formState: { errors } }) => (
                 <Stack direction="column" gap={2}>
@@ -151,7 +138,7 @@ export default function EditUser() {
                   </Stack>
 
                   <TextField
-                    required={true}
+                    required
                     name="fullName"
                     label={formatMessage('userForm.fullName')}
                     data-test="full-name-input"
@@ -161,7 +148,7 @@ export default function EditUser() {
                   />
 
                   <TextField
-                    required={true}
+                    required
                     name="email"
                     label={formatMessage('userForm.email')}
                     data-test="email-input"
@@ -170,25 +157,24 @@ export default function EditUser() {
                     helperText={errors?.email?.message}
                   />
 
-                  {isCurrentUserEnterpriseAdmin && (
-                    <ControlledAutocomplete
-                      name="roleId"
-                      fullWidth
-                      disablePortal
-                      disableClearable={true}
-                      options={generateRoleOptions(roles)}
-                      renderInput={(params) => (
-                        <MuiTextField
-                          {...params}
-                          label={formatMessage('userForm.role')}
-                          error={!!errors?.roleId}
-                          helperText={errors?.roleId?.message}
-                        />
-                      )}
-                      loading={isRolesLoading}
-                      showHelperText={false}
-                    />
-                  )}
+                  <ControlledAutocomplete
+                    name="roleId"
+                    fullWidth
+                    disablePortal
+                    disableClearable
+                    options={generateRoleOptions(roles)}
+                    renderInput={(params) => (
+                      <MuiTextField
+                        {...params}
+                        required
+                        label={formatMessage('userForm.role')}
+                        error={!!errors?.roleId}
+                        helperText={errors?.roleId?.message}
+                      />
+                    )}
+                    loading={isRolesLoading}
+                    showHelperText={false}
+                  />
 
                   {errors?.root?.general && (
                     <Alert data-test="update-user-error-alert" severity="error">

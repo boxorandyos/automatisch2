@@ -6,13 +6,12 @@ export default function useAdminUpdateSamlAuthProviderRoleMappings(
 ) {
   const queryClient = useQueryClient();
 
-  const query = useMutation({
+  return useMutation({
     mutationFn: async (payload) => {
       const { data } = await api.patch(
         `/v1/admin/saml-auth-providers/${samlAuthProviderId}/role-mappings`,
         payload,
       );
-
       return data;
     },
     onSuccess: () => {
@@ -26,6 +25,4 @@ export default function useAdminUpdateSamlAuthProviderRoleMappings(
       });
     },
   });
-
-  return query;
 }

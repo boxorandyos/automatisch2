@@ -1,5 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import Button from '@mui/material/Button';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -9,19 +10,19 @@ import { Link, useLocation } from 'react-router-dom';
 import SplitButton from 'components/SplitButton';
 
 import * as URLS from 'config/urls';
+import useAutomatischConfig from 'hooks/useAutomatischConfig';
 import useCurrentUserAbility from 'hooks/useCurrentUserAbility';
 import useFormatMessage from 'hooks/useFormatMessage';
-import useAutomatischConfig from 'hooks/useAutomatischConfig';
 
 export default function FlowsButtons() {
   const location = useLocation();
   const formatMessage = useFormatMessage();
   const currentUserAbility = useCurrentUserAbility();
   const theme = useTheme();
-  const { data: config } = useAutomatischConfig();
   const matchSmallScreens = useMediaQuery(theme.breakpoints.down('md'));
   const canCreateFlow = currentUserAbility.can('manage', 'Flow');
-  const enableTemplates = config?.data.enableTemplates === true;
+  const { data: configData } = useAutomatischConfig();
+  const enableTemplates = configData?.data?.enableTemplates === true;
 
   const createFlowButtonData = {
     label: formatMessage('flows.createFlow'),
@@ -31,12 +32,13 @@ export default function FlowsButtons() {
     startIcon: <AddIcon />,
   };
 
-  const createFlowFromTemplateButtonData = {
+  const createFromTemplateButtonData = {
     label: formatMessage('flows.createFlowFromTemplate'),
     key: 'createFlowFromTemplate',
     'data-test': 'create-flow-from-template-button',
     hide: !enableTemplates,
     to: URLS.VIEW_TEMPLATES,
+    startIcon: <LibraryBooksIcon />,
   };
 
   const importFlowButtonData = {
@@ -49,14 +51,12 @@ export default function FlowsButtons() {
   if (matchSmallScreens) {
     const connectionOptions = [
       createFlowButtonData,
-      createFlowFromTemplateButtonData,
+      createFromTemplateButtonData,
       importFlowButtonData,
     ].filter((option) => !option.hide);
 
     return (
-      <>
-        <SplitButton disabled={!canCreateFlow} options={connectionOptions} />
-      </>
+      <SplitButton disabled={!canCreateFlow} options={connectionOptions} />
     );
   }
 
@@ -78,10 +78,9 @@ export default function FlowsButtons() {
 
       <SplitButton
         disabled={!canCreateFlow}
-        options={[
-          createFlowButtonData,
-          createFlowFromTemplateButtonData,
-        ].filter((option) => !option.hide)}
+        options={[createFlowButtonData, createFromTemplateButtonData].filter(
+          (option) => !option.hide,
+        )}
       />
     </>
   );

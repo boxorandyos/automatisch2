@@ -98,7 +98,6 @@ const appConfig = {
   paddleVendorId: Number(process.env.PADDLE_VENDOR_ID),
   paddleVendorAuthCode: process.env.PADDLE_VENDOR_AUTH_CODE,
   paddlePublicKey: process.env.PADDLE_PUBLIC_KEY,
-  licenseKey: process.env.LICENSE_KEY,
   sentryDsn: process.env.SENTRY_DSN,
   CI: process.env.CI === 'true',
   disableNotificationsPage: process.env.DISABLE_NOTIFICATIONS_PAGE === 'true',

@@ -4,13 +4,12 @@ import api from 'helpers/api';
 export default function useAdminUpdateSamlAuthProvider(samlAuthProviderId) {
   const queryClient = useQueryClient();
 
-  const query = useMutation({
+  return useMutation({
     mutationFn: async (payload) => {
       const { data } = await api.patch(
         `/v1/admin/saml-auth-providers/${samlAuthProviderId}`,
         payload,
       );
-
       return data;
     },
     onSuccess: () => {
@@ -19,6 +18,4 @@ export default function useAdminUpdateSamlAuthProvider(samlAuthProviderId) {
       });
     },
   });
-
-  return query;
 }
