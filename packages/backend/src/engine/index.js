@@ -14,11 +14,13 @@ const run = async ({
   flowId,
   untilStepId,
   triggeredByRequest,
+  triggeredByMcp,
   request,
   testRun = false,
   resumeStepId,
   resumeExecutionId,
   initialData,
+  mcpToolId,
 }) => {
   // Build flow context
   const {
@@ -39,6 +41,12 @@ const run = async ({
   const { isAllowedToRunFlows } = await checkLimits({ flow });
 
   if (!testRun && !isAllowedToRunFlows) {
+    if (triggeredByMcp) {
+      return {
+        mcpError: `Flow execution quota exceeded for \`${flow.name}\`. Please check your subscription limits.`,
+      };
+    }
+
     return;
   }
 
@@ -50,9 +58,11 @@ const run = async ({
       actionSteps,
       testRun,
       triggeredByRequest,
+      triggeredByMcp,
       initialDataItem: null,
       resumeStepId,
       resumeExecutionId,
+      mcpToolId,
     });
   }
 
@@ -62,7 +72,7 @@ const run = async ({
   if (initialData) {
     data = initialData;
   } else {
-    const initialData = await getInitialData({
+    const initialDataResult = await getInitialData({
       testRun,
       flow,
       triggerStep,
@@ -74,8 +84,8 @@ const run = async ({
       isBuiltInApp,
     });
 
-    data = initialData.data;
-    error = initialData.error;
+    data = initialDataResult.data;
+    error = initialDataResult.error;
   }
 
   // Process initial data error
@@ -92,6 +102,12 @@ const run = async ({
 
     if (testRun) {
       return { executionStep };
+    }
+
+    if (triggeredByMcp) {
+      return {
+        mcpError: `Flow \`${flow.name}\` failed while preparing trigger data.`,
+      };
     }
 
     return;
@@ -112,7 +128,9 @@ const run = async ({
       actionSteps,
       testRun,
       triggeredByRequest,
+      triggeredByMcp,
       initialDataItem,
+      mcpToolId,
     });
 
     if (result) {

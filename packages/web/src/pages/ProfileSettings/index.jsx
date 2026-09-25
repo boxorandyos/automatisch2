@@ -1,12 +1,16 @@
 import { yupResolver } from '@hookform/resolvers/yup';
+import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
+import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import useEnqueueSnackbar from 'hooks/useEnqueueSnackbar';
 import * as React from 'react';
 import * as yup from 'yup';
 
 import Container from 'components/Container';
+import DeleteAccountDialog from 'components/DeleteAccountDialog';
 import Form from 'components/Form';
 import PageTitle from 'components/PageTitle';
 import TextField from 'components/TextField';
@@ -58,6 +62,8 @@ const getErrorMessage = (error) => {
 };
 
 function ProfileSettings() {
+  const [showDeleteAccountConfirmation, setShowDeleteAccountConfirmation] =
+    React.useState(false);
   const enqueueSnackbar = useEnqueueSnackbar();
   const { data } = useCurrentUser();
   const currentUser = data?.data;
@@ -259,6 +265,42 @@ function ProfileSettings() {
           />
         </Grid>
 
+        <Grid item xs={12} justifyContent="flex-end" sx={{ pt: 5 }}>
+          <Alert variant="outlined" severity="error">
+            <AlertTitle>
+              {formatMessage('profileSettings.deleteMyAccount')}
+            </AlertTitle>
+
+            <Typography variant="body1" gutterBottom>
+              {formatMessage('profileSettings.deleteAccountSubtitle')}
+            </Typography>
+
+            <ol>
+              <li>{formatMessage('profileSettings.deleteAccountResult1')}</li>
+              <li>{formatMessage('profileSettings.deleteAccountResult2')}</li>
+              <li>{formatMessage('profileSettings.deleteAccountResult3')}</li>
+              <li>{formatMessage('profileSettings.deleteAccountResult4')}</li>
+            </ol>
+
+            <Button
+              variant="contained"
+              type="button"
+              color="error"
+              size="small"
+              sx={{ justifyContent: 'end' }}
+              onClick={() => setShowDeleteAccountConfirmation(true)}
+              data-test="delete-account-button"
+            >
+              {formatMessage('profileSettings.deleteAccount')}
+            </Button>
+
+            {showDeleteAccountConfirmation && (
+              <DeleteAccountDialog
+                onClose={() => setShowDeleteAccountConfirmation(false)}
+              />
+            )}
+          </Alert>
+        </Grid>
       </Grid>
     </Container>
   );

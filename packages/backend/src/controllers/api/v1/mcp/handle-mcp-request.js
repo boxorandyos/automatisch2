@@ -1,18 +1,13 @@
 import crypto from 'node:crypto';
 import { McpServer as SdkMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import Engine from '@/engine/index.js';
-import McpToolExecution from '@/models/mcp-tool-execution.js';
+
 import McpSession from '@/models/mcp-session.js';
 import transports from '@/helpers/mcp-transports.js';
-
-const toolNameFor = (mcpTool) => {
-  if (mcpTool.type === 'flow') {
-    return mcpTool.action || `flow_${mcpTool.flowId}`;
-  }
-
-  return mcpTool.action || `${mcpTool.appKey}_tool`;
-};
+import {
+  describeMcpTools,
+  executeDescribedMcpTool,
+} from '@/helpers/mcp.js';
 
 const createSdkServer = async (mcpServer) => {
   const sdkServer = new SdkMcpServer({
@@ -20,76 +15,14 @@ const createSdkServer = async (mcpServer) => {
     version: '1.0.0',
   });
 
-  const mcpTools = await mcpServer.$relatedQuery('mcpTools');
+  const describedTools = await describeMcpTools(mcpServer);
 
-  for (const mcpTool of mcpTools) {
-    const name = toolNameFor(mcpTool);
-
+  for (const describedTool of describedTools) {
     sdkServer.tool(
-      name,
-      mcpTool.type === 'flow'
-        ? `Run Automatisch flow tool ${name}`
-        : `Run Automatisch app action ${name}`,
-      async (args = {}) => {
-        const execution = await McpToolExecution.query().insertAndFetch({
-          mcpToolId: mcpTool.id,
-          status: 'running',
-          dataIn: JSON.stringify(args),
-        });
-
-        try {
-          let result;
-
-          if (mcpTool.type === 'flow' && mcpTool.flowId) {
-            result = await Engine.run({
-              flowId: mcpTool.flowId,
-              triggeredByRequest: true,
-              initialData: [
-                {
-                  raw: args,
-                  meta: { internalId: crypto.randomUUID() },
-                },
-              ],
-            });
-          } else {
-            result = {
-              statusCode: 501,
-              body: 'App MCP tools are not executed via HTTP transport yet.',
-            };
-          }
-
-          const dataOut =
-            result?.body ?? result?.output ?? JSON.stringify(result ?? {});
-
-          await execution.$query().patchAndFetch({
-            status: 'success',
-            dataOut:
-              typeof dataOut === 'string' ? dataOut : JSON.stringify(dataOut),
-          });
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text:
-                  typeof dataOut === 'string'
-                    ? dataOut
-                    : JSON.stringify(dataOut),
-              },
-            ],
-          };
-        } catch (error) {
-          await execution.$query().patchAndFetch({
-            status: 'error',
-            errorDetails: { message: error.message },
-          });
-
-          return {
-            content: [{ type: 'text', text: error.message }],
-            isError: true,
-          };
-        }
-      }
+      describedTool.name,
+      describedTool.description,
+      describedTool.zodSchema.shape || {},
+      async (args = {}) => executeDescribedMcpTool(describedTool, args),
     );
   }
 

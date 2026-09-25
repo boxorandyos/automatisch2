@@ -47,6 +47,34 @@ class Agent extends Base {
       },
     },
   });
+
+  /**
+   * Replace any existing app tool for the same appKey, then insert the new tool.
+   * Flow-type tools are reserved for a future agent runtime path.
+   */
+  async createOrUpdateTool({
+    connectionId,
+    appKey,
+    actions,
+    type = 'app',
+    flowId,
+  }) {
+    if (type === 'flow' && flowId) {
+      return;
+    }
+
+    if (type === 'app' && appKey) {
+      await this.$relatedQuery('agentTools').where('app_key', appKey).delete();
+
+      return await this.$relatedQuery('agentTools').insertAndFetch({
+        type,
+        connectionId,
+        appKey,
+        actions,
+        flowId,
+      });
+    }
+  }
 }
 
 export default Agent;

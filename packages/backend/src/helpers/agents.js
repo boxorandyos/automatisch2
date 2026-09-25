@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { AgentExecutor, createToolCallingAgent } from 'langchain/agents';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatOpenAI } from '@langchain/openai';
@@ -14,6 +13,7 @@ import AgentTool from '@/models/agent-tool.js';
 import App from '@/models/app.js';
 import Connection from '@/models/connection.js';
 import globalVariable from '@/engine/global-variable.js';
+import { schemaFromActionArguments } from '@/helpers/mcp.js';
 
 const providers = {
   anthropic: ChatAnthropic,
@@ -23,24 +23,6 @@ const providers = {
 const defaultModels = {
   anthropic: 'claude-3-5-sonnet-20241022',
   openai: 'gpt-4o',
-};
-
-const schemaFromActionArguments = (actionArguments = []) => {
-  const shape = {};
-
-  for (const argument of actionArguments) {
-    if (!argument?.key) continue;
-
-    let field = z.string().optional();
-
-    if (argument.required) {
-      field = z.string();
-    }
-
-    shape[argument.key] = field.describe(argument.description || argument.key);
-  }
-
-  return Object.keys(shape).length ? z.object(shape) : z.object({}).passthrough();
 };
 
 export async function getAgentTools(agentId) {

@@ -49,6 +49,12 @@ export default function PlanUpgrade() {
                 </CardContent>
               </Card>
             ))}
+            {!isLoading && !isError && plans.length > 0 && (
+              <Typography color="text.secondary" variant="body2">
+                Online checkout is not configured in this build. Contact your
+                administrator to change plans.
+              </Typography>
+            )}
           </Stack>
         </Grid>
       </Grid>

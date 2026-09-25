@@ -24,6 +24,7 @@ import Folder from '@/models/folder.js';
 import UsageData from '@/models/usage-data.js';
 import Template from '@/models/template.js';
 import McpServer from '@/models/mcp-server.js';
+import McpToolExecution from '@/models/mcp-tool-execution.js';
 import Agent from '@/models/agent.js';
 import NotAuthorizedError from '@/errors/not-authorized.js';
 
@@ -371,6 +372,30 @@ class User extends Base {
     await Flow.query().whereIn('id', flowIds).delete();
     await this.$relatedQuery('connections').delete();
     await this.$relatedQuery('identities').delete();
+
+    const agents = await this.$relatedQuery('agents');
+    for (const agent of agents) {
+      await agent.$relatedQuery('agentExecutions').delete();
+      await agent.$relatedQuery('agentTools').delete();
+    }
+    await this.$relatedQuery('agents').delete();
+
+    const mcpServers = await this.$relatedQuery('mcpServers');
+    for (const mcpServer of mcpServers) {
+      const mcpToolIds = (
+        await mcpServer.$relatedQuery('mcpTools').select('id')
+      ).map((tool) => tool.id);
+
+      if (mcpToolIds.length) {
+        await McpToolExecution.query()
+          .delete()
+          .whereIn('mcp_tool_id', mcpToolIds);
+      }
+
+      await mcpServer.$relatedQuery('mcpSessions').delete();
+      await mcpServer.$relatedQuery('mcpTools').delete();
+    }
+    await this.$relatedQuery('mcpServers').delete();
 
     if (appConfig.isCloud) {
       await this.$relatedQuery('subscriptions').delete();
