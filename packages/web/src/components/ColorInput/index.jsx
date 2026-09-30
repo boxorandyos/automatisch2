@@ -27,6 +27,7 @@ function ColorInput(props) {
           {...field}
           disabled={disabled}
           inputProps={{
+            ...textFieldProps.inputProps,
             'data-test': 'color-text-field',
           }}
         />

@@ -3,7 +3,6 @@ import path, { join } from 'path';
 import { fileURLToPath } from 'url';
 import appInfoConverter from '@/helpers/app-info-converter.js';
 import getApp from '@/helpers/get-app.js';
-import { hasValidLicense } from '@/helpers/license.ee.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,10 +16,8 @@ class App {
       const fullPath = join(this.folderPath, file);
       if (!fs.statSync(fullPath).isDirectory()) return false;
 
-      // Check if directory has index.js or index.ee.js
       const indexPath = join(fullPath, 'index.js');
-      const indexEePath = join(fullPath, 'index.ee.js');
-      return fs.existsSync(indexPath) || fs.existsSync(indexEePath);
+      return fs.existsSync(indexPath);
     });
 
     // Add private apps if directory exists
@@ -31,10 +28,8 @@ class App {
           const fullPath = join(this.privatePath, file);
           if (!fs.statSync(fullPath).isDirectory()) return false;
 
-          // Check if directory has index.js or index.ee.js
           const indexPath = join(fullPath, 'index.js');
-          const indexEePath = join(fullPath, 'index.ee.js');
-          return fs.existsSync(indexPath) || fs.existsSync(indexEePath);
+          return fs.existsSync(indexPath);
         });
 
       // Combine directories, avoiding duplicates, and sort alphabetically
@@ -42,37 +37,7 @@ class App {
         ...new Set([...directories, ...privateDirectories]),
       ].sort();
 
-      if (!(await hasValidLicense())) {
-        // Filter out enterprise apps if no valid license
-        const nonEnterpriseApps = [];
-
-        for (const dir of allDirectories) {
-          const appData = await getApp(dir, true);
-
-          if (!appData.enterprise) {
-            nonEnterpriseApps.push(dir);
-          }
-        }
-
-        return nonEnterpriseApps;
-      }
-
       return allDirectories;
-    }
-
-    if (!(await hasValidLicense())) {
-      // Filter out enterprise apps if no valid license
-      const nonEnterpriseApps = [];
-
-      for (const dir of directories) {
-        const appData = await getApp(dir, true);
-
-        if (!appData.enterprise) {
-          nonEnterpriseApps.push(dir);
-        }
-      }
-
-      return nonEnterpriseApps.sort();
     }
 
     return directories.sort();

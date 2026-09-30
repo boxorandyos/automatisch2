@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 
-import * as Sentry from '@/helpers/sentry.ee.js';
+import * as Sentry from '@/helpers/sentry.js';
 import redisConfig from '@/config/redis.js';
 import logger from '@/helpers/logger.js';
 

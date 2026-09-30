@@ -1,10 +1,10 @@
 const licenseMock = () => {
   return {
     data: {
-      expireAt: '2025-12-31T23:59:59Z',
-      id: '123',
-      name: 'license-name',
-      verified: true,
+      expireAt: null,
+      id: null,
+      name: null,
+      verified: false,
     },
     meta: {
       count: 1,

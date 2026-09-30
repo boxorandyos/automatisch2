@@ -4,7 +4,6 @@ import Step from '@/models/step.js';
 import User from '@/models/user.js';
 import Folder from '@/models/folder.js';
 import Execution from '@/models/execution.js';
-import Form from '@/models/form.ee.js';
 import ExecutionStep from '@/models/execution-step.js';
 import globalVariable from '@/engine/global-variable.js';
 import logger from '@/helpers/logger.js';
@@ -12,7 +11,6 @@ import Telemetry from '@/helpers/telemetry/index.js';
 import exportFlow from '@/helpers/export-flow.js';
 import importFlow from '@/helpers/import-flow.js';
 import flowQueue from '@/queues/flow.js';
-import { hasValidLicense } from '@/helpers/license.ee.js';
 import Engine from '@/engine/index.js';
 
 const EVERY_1_MINUTE_CRON = '* * * * *';
@@ -180,22 +178,6 @@ class Flow extends Base {
 
   async getStepById(stepId) {
     return await this.$relatedQuery('steps').findById(stepId).throwIfNotFound();
-  }
-
-  async getPublicForm() {
-    const triggerStep = await this.getTriggerStep();
-
-    const form = await Form.query()
-      .findOne({ id: triggerStep.parameters.formId })
-      .throwIfNotFound();
-
-    const computedForm = {
-      ...form,
-      webhookUrl: await triggerStep.getWebhookUrl(),
-      asyncRedirectUrl: triggerStep.parameters.asyncRedirectUrl,
-    };
-
-    return computedForm;
   }
 
   async insertActionStepAtPosition(position) {
@@ -414,10 +396,6 @@ class Flow extends Base {
   async getExecutionIntervalAsCron() {
     const interval = this.executionInterval || 15;
 
-    if (!(await hasValidLicense())) {
-      return EVERY_15_MINUTES_CRON;
-    }
-
     switch (interval) {
       case 1:
         return EVERY_1_MINUTE_CRON;
@@ -556,16 +534,6 @@ class Flow extends Base {
       .orderBy('updated_at', 'desc');
   }
 
-  async assignExecutionInterval() {
-    if (this.executionInterval && this.executionInterval !== 15) {
-      const validLicense = await hasValidLicense();
-
-      if (!validLicense) {
-        this.executionInterval = 15;
-      }
-    }
-  }
-
   async $beforeUpdate(opt, queryContext) {
     await super.$beforeUpdate(opt, queryContext);
 
@@ -574,14 +542,10 @@ class Flow extends Base {
 
       await opt.old.throwIfHavingLessThanTwoSteps();
     }
-
-    await this.assignExecutionInterval();
   }
 
   async $beforeInsert(queryContext) {
     await super.$beforeInsert(queryContext);
-
-    await this.assignExecutionInterval();
   }
 
   async $afterInsert(queryContext) {

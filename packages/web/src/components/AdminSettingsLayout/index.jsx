@@ -1,12 +1,12 @@
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import GroupIcon from '@mui/icons-material/Group';
 import GroupsIcon from '@mui/icons-material/Groups';
-import LockIcon from '@mui/icons-material/LockPerson';
+import LockIcon from '@mui/icons-material/Lock';
 import BrushIcon from '@mui/icons-material/Brush';
 import AppsIcon from '@mui/icons-material/Apps';
-import PinIcon from '@mui/icons-material/Pin';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
+import ArticleIcon from '@mui/icons-material/Article';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 import { Outlet } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -20,14 +20,10 @@ import Drawer from 'components/Drawer';
 import * as URLS from 'config/urls';
 import useFormatMessage from 'hooks/useFormatMessage';
 import useIsCurrentUserAdmin from 'hooks/useIsCurrentUserAdmin';
-import useIsCurrentUserEnterpriseAdmin from 'hooks/useIsCurrentUserEnterpriseAdmin';
 
 import Footer from './Footer';
 
-function createDrawerLinks({
-  isCurrentUserAdmin,
-  isCurrentUserEnterpriseAdmin,
-}) {
+function createDrawerLinks({ isCurrentUserAdmin }) {
   const items = [
     isCurrentUserAdmin
       ? {
@@ -37,7 +33,7 @@ function createDrawerLinks({
           dataTest: 'users-drawer-link',
         }
       : null,
-    isCurrentUserEnterpriseAdmin
+    isCurrentUserAdmin
       ? {
           Icon: GroupsIcon,
           primary: 'adminSettingsDrawer.roles',
@@ -45,15 +41,7 @@ function createDrawerLinks({
           dataTest: 'roles-drawer-link',
         }
       : null,
-    isCurrentUserEnterpriseAdmin
-      ? {
-          Icon: BrushIcon,
-          primary: 'adminSettingsDrawer.userInterface',
-          to: URLS.USER_INTERFACE,
-          dataTest: 'user-interface-drawer-link',
-        }
-      : null,
-    isCurrentUserEnterpriseAdmin
+    isCurrentUserAdmin
       ? {
           Icon: LockIcon,
           primary: 'adminSettingsDrawer.authentication',
@@ -61,15 +49,23 @@ function createDrawerLinks({
           dataTest: 'authentication-drawer-link',
         }
       : null,
-    isCurrentUserEnterpriseAdmin
+    isCurrentUserAdmin
       ? {
-          Icon: SmartToyIcon,
+          Icon: BrushIcon,
+          primary: 'adminSettingsDrawer.userInterface',
+          to: URLS.USER_INTERFACE,
+          dataTest: 'user-interface-drawer-link',
+        }
+      : null,
+    isCurrentUserAdmin
+      ? {
+          Icon: PsychologyIcon,
           primary: 'adminSettingsDrawer.aiConfig',
           to: URLS.AI_CONFIG,
           dataTest: 'ai-config-drawer-link',
         }
       : null,
-    isCurrentUserEnterpriseAdmin
+    isCurrentUserAdmin
       ? {
           Icon: AppsIcon,
           primary: 'adminSettingsDrawer.apps',
@@ -77,17 +73,17 @@ function createDrawerLinks({
           dataTest: 'apps-drawer-link',
         }
       : null,
-    isCurrentUserEnterpriseAdmin
+    isCurrentUserAdmin
       ? {
-          Icon: ContentCopyIcon,
+          Icon: ArticleIcon,
           primary: 'adminSettingsDrawer.templates',
           to: URLS.ADMIN_TEMPLATES,
           dataTest: 'templates-drawer-link',
         }
       : null,
-    isCurrentUserEnterpriseAdmin
+    isCurrentUserAdmin
       ? {
-          Icon: PinIcon,
+          Icon: VpnKeyIcon,
           primary: 'adminSettingsDrawer.apiTokens',
           to: URLS.ADMIN_API_TOKENS,
           dataTest: 'api-tokens-drawer-link',
@@ -102,7 +98,6 @@ function AdminSettingsLayout() {
   const theme = useTheme();
   const formatMessage = useFormatMessage();
   const isCurrentUserAdmin = useIsCurrentUserAdmin();
-  const isCurrentUserEnterpriseAdmin = useIsCurrentUserEnterpriseAdmin();
   const matchSmallScreens = useMediaQuery(theme.breakpoints.down('lg'));
   const [isDrawerOpen, setDrawerOpen] = React.useState(!matchSmallScreens);
   const openDrawer = () => setDrawerOpen(true);
@@ -110,7 +105,6 @@ function AdminSettingsLayout() {
 
   const drawerLinks = createDrawerLinks({
     isCurrentUserAdmin: isCurrentUserAdmin,
-    isCurrentUserEnterpriseAdmin: isCurrentUserEnterpriseAdmin,
   });
 
   const drawerBottomLinks = [

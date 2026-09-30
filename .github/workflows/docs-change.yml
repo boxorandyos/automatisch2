@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'packages/docs/**'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   label:
     runs-on: ubuntu-latest
@@ -18,7 +24,12 @@ jobs:
             const label = 'documentation-change';
             const hasLabel = pull_request.labels.some(({ name }) => name === label);
 
-            if (!hasLabel) {
+            if (hasLabel) {
+              console.log(`Label "${label}" already exists on PR #${pull_request.number}`);
+              return;
+            }
+
+            try {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -27,6 +38,16 @@ jobs:
               });
 
               console.log(`Label "${label}" added to PR #${pull_request.number}`);
-            } else {
-              console.log(`Label "${label}" already exists on PR #${pull_request.number}`);
+            } catch (error) {
+              const status = error.status || error.response?.status;
+              // Repo token policy may deny label writes (e.g. read-only GITHUB_TOKEN).
+              // Do not fail the PR for an optional metadata label.
+              if (status === 403 || status === 404) {
+                console.warn(
+                  `Skipping label "${label}" on PR #${pull_request.number}: ${error.message}`
+                );
+                return;
+              }
+
+              throw error;
             }

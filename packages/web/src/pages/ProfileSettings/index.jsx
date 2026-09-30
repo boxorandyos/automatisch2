@@ -10,7 +10,7 @@ import * as React from 'react';
 import * as yup from 'yup';
 
 import Container from 'components/Container';
-import DeleteAccountDialog from 'components/DeleteAccountDialog/index.ee';
+import DeleteAccountDialog from 'components/DeleteAccountDialog';
 import Form from 'components/Form';
 import PageTitle from 'components/PageTitle';
 import TextField from 'components/TextField';
@@ -284,11 +284,12 @@ function ProfileSettings() {
 
             <Button
               variant="contained"
-              type="submit"
+              type="button"
               color="error"
               size="small"
               sx={{ justifyContent: 'end' }}
               onClick={() => setShowDeleteAccountConfirmation(true)}
+              data-test="delete-account-button"
             >
               {formatMessage('profileSettings.deleteAccount')}
             </Button>

@@ -16,14 +16,13 @@ import copyValue from 'helpers/copyValue';
 import { makeBold } from 'helpers/translationValues';
 import useFormatMessage from 'hooks/useFormatMessage';
 
-function CreatedApiTokenDialog(props) {
+export default function CreatedApiTokenDialog(props) {
   const {
     open = true,
     'data-test': dataTest = 'created-api-token-dialog',
     onClose,
     apiToken,
   } = props;
-
   const formatMessage = useFormatMessage();
 
   return (
@@ -38,7 +37,7 @@ function CreatedApiTokenDialog(props) {
         <MuiTextField
           label={formatMessage('createdApiTokenDialog.apiTokenFieldLabel')}
           variant="outlined"
-          value={apiToken}
+          value={apiToken || ''}
           fullWidth
           InputLabelProps={{ shrink: true }}
           InputProps={{
@@ -78,9 +77,7 @@ function CreatedApiTokenDialog(props) {
 
 CreatedApiTokenDialog.propTypes = {
   open: PropTypes.bool,
-  'data-test': PropTypes.string,
+  onClose: PropTypes.func.isRequired,
   apiToken: PropTypes.string,
-  onClose: PropTypes.func,
+  'data-test': PropTypes.string,
 };
-
-export default CreatedApiTokenDialog;

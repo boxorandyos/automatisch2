@@ -22,7 +22,6 @@ env:
   POSTGRES_PASSWORD: automatisch_password
   REDIS_HOST: localhost
   APP_ENV: production
-  LICENSE_KEY: dummy_license_key
 
 jobs:
   test:

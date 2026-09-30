@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import Permission from '@/models/permission.js';
-import permissionCatalog from '@/helpers/permission-catalog.ee.js';
+import permissionCatalog from '@/helpers/permission-catalog.js';
 
 describe('Permission model', () => {
   it('tableName should return correct name', () => {

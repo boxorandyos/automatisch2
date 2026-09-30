@@ -89,6 +89,7 @@
   "filterConditions.orContinueIf": "OR continue if…",
   "chooseConnectionSubstep.continue": "Continue",
   "chooseConnectionSubstep.addNewConnection": "Add new connection",
+  "chooseConnectionSubstep.addNewSharedConnection": "Add shared connection",
   "chooseConnectionSubstep.addConnectionWithOAuthClient": "Add connection with OAuth client",
   "chooseConnectionSubstep.chooseConnection": "Choose connection",
   "flow.createdAt": "created {datetime}",

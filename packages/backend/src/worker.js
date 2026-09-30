@@ -1,4 +1,4 @@
-import * as Sentry from '@/helpers/sentry.ee.js';
+import * as Sentry from '@/helpers/sentry.js';
 import process from 'node:process';
 
 Sentry.init();

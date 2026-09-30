@@ -21,6 +21,9 @@ export default defineAction({
     $.setActionItem({
       raw: {
         output,
+        body: output,
+        statusCode: 200,
+        headers: {},
       },
     });
   },

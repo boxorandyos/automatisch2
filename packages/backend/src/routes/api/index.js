@@ -1,12 +1,15 @@
 import { Router } from 'express';
-import v1Router from './v1/index.ee.js';
-import mcpRouter from './v1/mcp.ee.js';
-import { checkIsEnterprise } from '../../helpers/check-is-enterprise.js';
-import { authenticateApiToken } from '../../helpers/authenticate-api-token.ee.js';
+
+import authenticateApiToken from '@/helpers/authenticate-api-token.js';
+import apiV1Router from '@/routes/api/v1/index.js';
+import mcpRouter from '@/routes/api/v1/mcp.js';
 
 const router = Router();
 
-router.use('/v1/mcp', checkIsEnterprise, mcpRouter);
-router.use('/v1', checkIsEnterprise, authenticateApiToken, v1Router);
+// MCP uses MCP server Bearer tokens (not API tokens).
+router.use('/v1/mcp', mcpRouter);
+
+router.use(authenticateApiToken);
+router.use('/v1', apiV1Router);
 
 export default router;

@@ -1,7 +1,7 @@
 import processTriggerStep from '@/engine/trigger/process.js';
 import processActionStep from '@/engine/action/process.js';
 import Engine from '@/engine/index.js';
-import McpToolExecution from '@/models/mcp-tool-execution.ee.js';
+import McpToolExecution from '@/models/mcp-tool-execution.js';
 import delayAsMilliseconds from '@/helpers/delay-as-milliseconds.js';
 
 const iterateSteps = async ({
@@ -139,24 +139,33 @@ const iterateSteps = async ({
       .where({ app_key: 'mcp', key: 'respondWith' })
       .first();
 
+    if (!respondWithStep || !execution) {
+      return {
+        mcpSuccess: `Successfully executed flow \`${flow.name}\`.`,
+        mcpData: null,
+      };
+    }
+
     const respondWithExecutionStep = await execution
       .$relatedQuery('executionSteps')
       .where({ step_id: respondWithStep.id })
       .first();
 
-    const mcpToolExecution = await McpToolExecution.query()
-      .where({
-        id: mcpToolExecutionId,
-      })
-      .first();
+    if (mcpToolExecutionId) {
+      const mcpToolExecution = await McpToolExecution.query()
+        .findById(mcpToolExecutionId);
 
-    await mcpToolExecution
-      .$query()
-      .patchAndFetch({ dataOut: respondWithExecutionStep.dataOut });
+      if (mcpToolExecution) {
+        await mcpToolExecution.$query().patchAndFetch({
+          dataOut: JSON.stringify(respondWithExecutionStep?.dataOut ?? {}),
+          status: 'success',
+        });
+      }
+    }
 
     return {
       mcpSuccess: `Successfully executed flow \`${flow.name}\`.`,
-      mcpData: respondWithExecutionStep.dataOut,
+      mcpData: respondWithExecutionStep?.dataOut,
     };
   }
 

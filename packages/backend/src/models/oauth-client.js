@@ -14,6 +14,7 @@ class OAuthClient extends Base {
     properties: {
       id: { type: 'string', format: 'uuid' },
       appKey: { type: 'string' },
+      name: { type: 'string', minLength: 1 },
       active: { type: 'boolean' },
       authDefaults: { type: ['string', 'null'] },
       formattedAuthDefaults: { type: 'object' },

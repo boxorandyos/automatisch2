@@ -18,11 +18,10 @@ import Tab from '@mui/material/Tab';
 import AddIcon from '@mui/icons-material/Add';
 
 import useFormatMessage from 'hooks/useFormatMessage';
-import useAppConfig from 'hooks/useAppConfig.ee';
 import useCurrentUserAbility from 'hooks/useCurrentUserAbility';
 import * as URLS from 'config/urls';
-import SplitButton from 'components/SplitButton';
 import ConditionalIconButton from 'components/ConditionalIconButton';
+import SplitButton from 'components/SplitButton';
 import AppConnections from 'components/AppConnections';
 import AppFlows from 'components/AppFlows';
 import AddAppConnection from 'components/AddAppConnection';
@@ -30,6 +29,7 @@ import AppIcon from 'components/AppIcon';
 import Container from 'components/Container';
 import PageTitle from 'components/PageTitle';
 import useApp from 'hooks/useApp';
+import useAppConfig from 'hooks/useAppConfig';
 import useOAuthClients from 'hooks/useOAuthClients';
 import Can from 'components/Can';
 import { AppPropType } from 'propTypes/propTypes';
@@ -63,27 +63,32 @@ export default function Application() {
   const flowsPathMatch = useMatch({ path: URLS.APP_FLOWS_PATTERN, end: false });
   const { appKey } = useParams();
   const navigate = useNavigate();
-  const { data: appOAuthClients } = useOAuthClients(appKey);
 
   const { data, loading } = useApp(appKey);
   const app = data?.data || {};
-
-  const { data: appConfig } = useAppConfig(appKey);
+  const { data: appConfigData } = useAppConfig(appKey);
+  const appConfig = appConfigData?.data;
+  const { data: oauthClientsData } = useOAuthClients(appKey);
+  const oauthClients = (oauthClientsData?.data || []).filter(
+    (client) => client.active,
+  );
 
   const currentUserAbility = useCurrentUserAbility();
 
   const goToApplicationPage = () => navigate('connections');
 
   const connectionOptions = React.useMemo(() => {
+    const canManageConnection = currentUserAbility.can('manage', 'Connection');
+
     const addCustomConnection = {
       label: formatMessage('app.addConnection'),
       key: 'addConnection',
       'data-test': 'add-connection-button',
       to: URLS.APP_ADD_CONNECTION(appKey, false),
       disabled:
-        !currentUserAbility.can('manage', 'Connection') ||
-        appConfig?.data?.useOnlyPredefinedAuthClients === true ||
-        appConfig?.data?.disabled === true,
+        !canManageConnection ||
+        appConfig?.useOnlyPredefinedAuthClients === true ||
+        appConfig?.disabled === true,
     };
 
     const addConnectionWithOAuthClient = {
@@ -92,28 +97,34 @@ export default function Application() {
       'data-test': 'add-connection-with-auth-client-button',
       to: URLS.APP_ADD_CONNECTION(appKey, true),
       disabled:
-        !currentUserAbility.can('manage', 'Connection') ||
-        appOAuthClients?.data?.length === 0 ||
-        appConfig?.data?.disabled === true,
+        !canManageConnection ||
+        oauthClients.length === 0 ||
+        appConfig?.disabled === true,
     };
 
-    // means there is no app config. defaulting to custom connections only
-    if (!appConfig?.data) {
+    // No app config: custom connections only.
+    if (!appConfig) {
       return [addCustomConnection];
     }
 
-    // means only OAuth clients are allowed for connection creation
-    if (appConfig?.data?.useOnlyPredefinedAuthClients === true) {
+    // Predefined OAuth clients only.
+    if (appConfig.useOnlyPredefinedAuthClients === true) {
       return [addConnectionWithOAuthClient];
     }
 
-    // means there is no OAuth client. so we don't show the `addConnectionWithOAuthClient`
-    if (appOAuthClients?.data?.length === 0) {
+    // No OAuth clients: custom only.
+    if (oauthClients.length === 0) {
       return [addCustomConnection];
     }
 
     return [addCustomConnection, addConnectionWithOAuthClient];
-  }, [appKey, appConfig, appOAuthClients, currentUserAbility, formatMessage]);
+  }, [
+    appKey,
+    appConfig,
+    oauthClients.length,
+    currentUserAbility,
+    formatMessage,
+  ]);
 
   if (loading) return null;
 

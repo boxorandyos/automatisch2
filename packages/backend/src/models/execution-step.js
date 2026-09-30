@@ -53,13 +53,7 @@ class ExecutionStep extends Base {
   }
 
   async updateUsageData() {
-    const execution = await this.$relatedQuery('execution');
-
-    const flow = await execution.$relatedQuery('flow');
-    const user = await flow.$relatedQuery('user');
-    const usageData = await user.$relatedQuery('currentUsageData');
-
-    await usageData.increaseConsumedTaskCountByOne();
+    // Usage tracking was an enterprise/cloud billing concern; no-op in CE.
   }
 
   async increaseUsageCount() {

@@ -2,7 +2,6 @@ import { ValidationError } from 'objection';
 import Base from '@/models/base.js';
 import Permission from '@/models/permission.js';
 import User from '@/models/user.js';
-import SamlAuthProvider from '@/models/saml-auth-provider.ee.js';
 import NotAuthorizedError from '@/errors/not-authorized.js';
 
 class Role extends Base {
@@ -127,33 +126,8 @@ class Role extends Base {
     }
   }
 
-  async assertNoConfigurationUsage() {
-    const samlAuthProviderUsingDefaultRole = await SamlAuthProvider.query()
-      .where({
-        default_role_id: this.id,
-      })
-      .limit(1)
-      .first();
-
-    if (samlAuthProviderUsingDefaultRole) {
-      throw new ValidationError({
-        data: {
-          samlAuthProvider: [
-            {
-              message:
-                'You need to change the default role in the SAML configuration before deleting this role.',
-            },
-          ],
-        },
-        type: 'ValidationError',
-      });
-    }
-  }
-
   async assertRoleIsNotUsed() {
     await this.assertNoRoleUserExists();
-
-    await this.assertNoConfigurationUsage();
   }
 
   async $beforeUpdate(opt, queryContext) {

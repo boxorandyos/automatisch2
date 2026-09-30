@@ -14,15 +14,14 @@ import Form from 'components/Form';
 import PageTitle from 'components/PageTitle';
 import TextField from 'components/TextField';
 import useFormatMessage from 'hooks/useFormatMessage';
-import useRoles from 'hooks/useRoles.ee';
+import useRoles from 'hooks/useRoles';
 import useAdminCreateUser from 'hooks/useAdminCreateUser';
-import useIsCurrentUserEnterpriseAdmin from 'hooks/useIsCurrentUserEnterpriseAdmin';
 
 function generateRoleOptions(roles) {
   return roles?.map(({ name: label, id: value }) => ({ label, value }));
 }
 
-const getValidationSchema = (formatMessage, canUpdateRole) => {
+const getValidationSchema = (formatMessage) => {
   const getMandatoryFieldMessage = (fieldTranslationId) =>
     formatMessage('userForm.mandatoryInput', {
       inputName: formatMessage(fieldTranslationId),
@@ -38,13 +37,7 @@ const getValidationSchema = (formatMessage, canUpdateRole) => {
       .trim()
       .email(formatMessage('userForm.validateEmail'))
       .required(getMandatoryFieldMessage('userForm.email')),
-    ...(canUpdateRole
-      ? {
-          roleId: yup
-            .string()
-            .required(getMandatoryFieldMessage('userForm.role')),
-        }
-      : {}),
+    roleId: yup.string().required(getMandatoryFieldMessage('userForm.role')),
   });
 };
 
@@ -62,8 +55,7 @@ export default function CreateUser() {
     data: createdUser,
     isSuccess: createUserSuccess,
   } = useAdminCreateUser();
-  const isCurrentUserEnterpriseAdmin = useIsCurrentUserEnterpriseAdmin();
-  const { data: rolesData, loading: isRolesLoading } = useRoles();
+  const { data: rolesData, isLoading: isRolesLoading } = useRoles();
   const roles = rolesData?.data;
   const queryClient = useQueryClient();
 
@@ -97,14 +89,12 @@ export default function CreateUser() {
             onSubmit={handleUserCreation}
             mode="onSubmit"
             defaultValues={defaultValues}
-            resolver={yupResolver(
-              getValidationSchema(formatMessage, isCurrentUserEnterpriseAdmin),
-            )}
+            resolver={yupResolver(getValidationSchema(formatMessage))}
             automaticValidation={false}
             render={({ formState: { errors } }) => (
               <Stack direction="column" gap={2}>
                 <TextField
-                  required={true}
+                  required
                   name="fullName"
                   label={formatMessage('userForm.fullName')}
                   data-test="full-name-input"
@@ -114,7 +104,7 @@ export default function CreateUser() {
                 />
 
                 <TextField
-                  required={true}
+                  required
                   name="email"
                   label={formatMessage('userForm.email')}
                   data-test="email-input"
@@ -123,30 +113,28 @@ export default function CreateUser() {
                   helperText={errors?.email?.message}
                 />
 
-                {isCurrentUserEnterpriseAdmin && (
-                  <ControlledAutocomplete
-                    name="roleId"
-                    fullWidth
-                    disablePortal
-                    disableClearable={true}
-                    options={generateRoleOptions(roles)}
-                    renderInput={(params) => (
-                      <MuiTextField
-                        {...params}
-                        required
-                        label={formatMessage('userForm.role')}
-                        error={!!errors?.roleId}
-                        helperText={errors?.roleId?.message}
-                      />
-                    )}
-                    loading={isRolesLoading}
-                    showHelperText={false}
-                  />
-                )}
+                <ControlledAutocomplete
+                  name="roleId"
+                  fullWidth
+                  disablePortal
+                  disableClearable
+                  options={generateRoleOptions(roles)}
+                  renderInput={(params) => (
+                    <MuiTextField
+                      {...params}
+                      required
+                      label={formatMessage('userForm.role')}
+                      error={!!errors?.roleId}
+                      helperText={errors?.roleId?.message}
+                    />
+                  )}
+                  loading={isRolesLoading}
+                  showHelperText={false}
+                />
 
                 {errors?.root?.general && (
                   <Alert data-test="create-user-error-alert" severity="error">
-                    {errors?.root?.general?.message}
+                    {errors.root.general.message}
                   </Alert>
                 )}
 

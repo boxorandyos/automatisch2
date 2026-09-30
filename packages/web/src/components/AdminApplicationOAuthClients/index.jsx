@@ -1,28 +1,32 @@
+import * as React from 'react';
 import PropTypes from 'prop-types';
+import {
+  Button,
+  Card,
+  CardActionArea,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { Link } from 'react-router-dom';
-import CircularProgress from '@mui/material/CircularProgress';
-import Stack from '@mui/material/Stack';
-import Card from '@mui/material/Card';
-import CardActionArea from '@mui/material/CardActionArea';
-import CardContent from '@mui/material/CardContent';
-import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
-import Button from '@mui/material/Button';
 
 import NoResultFound from 'components/NoResultFound';
 import * as URLS from 'config/urls';
-import useFormatMessage from 'hooks/useFormatMessage';
 import useAdminOAuthClients from 'hooks/useAdminOAuthClients';
+import useFormatMessage from 'hooks/useFormatMessage';
 
-function AdminApplicationOAuthClients(props) {
-  const { appKey } = props;
+export default function AdminApplicationOAuthClients({ appKey }) {
   const formatMessage = useFormatMessage();
-  const { data: appOAuthClients, isLoading } = useAdminOAuthClients(appKey);
+  const { data, isLoading } = useAdminOAuthClients(appKey);
+  const clients = data?.data || [];
 
-  if (isLoading)
-    return <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />;
+  if (isLoading) {
+    return <CircularProgress sx={{ display: 'block', m: '20px auto' }} />;
+  }
 
-  if (!appOAuthClients?.data.length) {
+  if (!clients.length) {
     return (
       <NoResultFound
         to={URLS.ADMIN_APP_AUTH_CLIENTS_CREATE(appKey)}
@@ -31,19 +35,15 @@ function AdminApplicationOAuthClients(props) {
     );
   }
 
-  const sortedOAuthClients = appOAuthClients.data.slice().sort((a, b) => {
-    if (a.id < b.id) {
-      return -1;
-    }
-    if (a.id > b.id) {
-      return 1;
-    }
+  const sortedClients = clients.slice().sort((a, b) => {
+    if (a.id < b.id) return -1;
+    if (a.id > b.id) return 1;
     return 0;
   });
 
   return (
     <div>
-      {sortedOAuthClients.map((client) => (
+      {sortedClients.map((client) => (
         <Card sx={{ mb: 1 }} key={client.id} data-test="auth-client">
           <CardActionArea
             component={Link}
@@ -56,10 +56,10 @@ function AdminApplicationOAuthClients(props) {
                 </Typography>
                 <Chip
                   size="small"
-                  color={client?.active ? 'success' : 'info'}
-                  variant={client?.active ? 'filled' : 'outlined'}
+                  color={client.active ? 'success' : 'info'}
+                  variant={client.active ? 'filled' : 'outlined'}
                   label={formatMessage(
-                    client?.active
+                    client.active
                       ? 'adminAppsOAuthClients.statusActive'
                       : 'adminAppsOAuthClients.statusInactive',
                   )}
@@ -69,6 +69,7 @@ function AdminApplicationOAuthClients(props) {
           </CardActionArea>
         </Card>
       ))}
+
       <Stack justifyContent="flex-end" direction="row">
         <Link to={URLS.ADMIN_APP_AUTH_CLIENTS_CREATE(appKey)}>
           <Button
@@ -88,5 +89,3 @@ function AdminApplicationOAuthClients(props) {
 AdminApplicationOAuthClients.propTypes = {
   appKey: PropTypes.string.isRequired,
 };
-
-export default AdminApplicationOAuthClients;

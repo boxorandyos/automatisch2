@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import CustomLogo from 'components/CustomLogo/index.ee';
+import CustomLogo from 'components/CustomLogo/index';
 import DefaultLogo from 'components/DefaultLogo';
 import useAutomatischConfig from 'hooks/useAutomatischConfig';
 

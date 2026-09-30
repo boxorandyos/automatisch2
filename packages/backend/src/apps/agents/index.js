@@ -9,7 +9,7 @@ export default defineApp({
   apiBaseUrl: '',
   iconUrl: '{BASE_URL}/apps/agents/assets/favicon.svg',
   authDocUrl: '{DOCS_URL}/apps/agents/connection',
-  primaryColor: '#6366f1',
+  primaryColor: '#4B5563',
   supportsConnections: false,
   actions,
   dynamicData,

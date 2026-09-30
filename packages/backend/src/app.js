@@ -6,7 +6,7 @@ import cors from 'cors';
 import appConfig from './config/app.js';
 import corsOptions from './config/cors-options.js';
 import morgan from './helpers/morgan.js';
-import * as Sentry from './helpers/sentry.ee.js';
+import * as Sentry from './helpers/sentry.js';
 import assetsHandler from './helpers/assets-handler.js';
 import webUIHandler from './helpers/web-ui-handler.js';
 import errorHandler from './helpers/error-handler.js';

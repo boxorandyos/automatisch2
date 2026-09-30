@@ -1,10 +1,9 @@
 import { Route, Navigate } from 'react-router-dom';
 
 import SettingsLayout from 'components/SettingsLayout';
-import { PaddleProvider } from 'contexts/Paddle.ee';
+import BillingAndUsageSettings from 'pages/BillingAndUsageSettings';
+import PlanUpgrade from 'pages/PlanUpgrade';
 import ProfileSettings from 'pages/ProfileSettings';
-import BillingAndUsageSettings from 'pages/BillingAndUsageSettings/index.ee';
-import PlanUpgrade from 'pages/PlanUpgrade/index.ee';
 import * as URLS from 'config/urls';
 
 export default (
@@ -31,9 +30,7 @@ export default (
       path={URLS.SETTINGS_PLAN_UPGRADE}
       element={
         <SettingsLayout>
-          <PaddleProvider>
-            <PlanUpgrade />
-          </PaddleProvider>
+          <PlanUpgrade />
         </SettingsLayout>
       }
     />

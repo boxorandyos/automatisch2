@@ -58,9 +58,11 @@ const run = async ({
       actionSteps,
       testRun,
       triggeredByRequest,
+      triggeredByMcp,
       initialDataItem: null,
       resumeStepId,
       resumeExecutionId,
+      mcpToolId,
     });
   }
 
@@ -70,7 +72,7 @@ const run = async ({
   if (initialData) {
     data = initialData;
   } else {
-    const initialData = await getInitialData({
+    const initialDataResult = await getInitialData({
       testRun,
       flow,
       triggerStep,
@@ -82,8 +84,8 @@ const run = async ({
       isBuiltInApp,
     });
 
-    data = initialData.data;
-    error = initialData.error;
+    data = initialDataResult.data;
+    error = initialDataResult.error;
   }
 
   // Process initial data error
@@ -100,6 +102,12 @@ const run = async ({
 
     if (testRun) {
       return { executionStep };
+    }
+
+    if (triggeredByMcp) {
+      return {
+        mcpError: `Flow \`${flow.name}\` failed while preparing trigger data.`,
+      };
     }
 
     return;

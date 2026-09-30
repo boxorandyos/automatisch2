@@ -8,12 +8,12 @@ import {
 } from '@langchain/core/prompts';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 
-import { generateSchemaOutOfActionArguments } from '@/helpers/mcp.ee.js';
 import Config from '@/models/config.js';
-import AgentTool from '@/models/agent-tool.ee.js';
+import AgentTool from '@/models/agent-tool.js';
 import App from '@/models/app.js';
 import Connection from '@/models/connection.js';
 import globalVariable from '@/engine/global-variable.js';
+import { schemaFromActionArguments } from '@/helpers/mcp.js';
 
 const providers = {
   anthropic: ChatAnthropic,
@@ -26,104 +26,101 @@ const defaultModels = {
 };
 
 export async function getAgentTools(agentId) {
-  const agentTools = await AgentTool.query().where({ agent_id: agentId });
-  return agentTools;
+  return await AgentTool.query().where({ agent_id: agentId });
 }
 
 export async function generateTools(agentTools) {
   const tools = [];
+
   for (const agentTool of agentTools) {
-    if (agentTool.type === 'app') {
-      // Handle app-based tools
-      const { appKey, actions } = agentTool;
-      const app = await App.findOneByKey(appKey);
-      const appActions = app.actions || [];
-
-      for (const actionKey of actions) {
-        const appAction = appActions.find(({ key }) => key === actionKey);
-        if (appAction) {
-          const toolName = `${appKey}_${appAction.key}`;
-          const toolSchema = generateSchemaOutOfActionArguments(
-            appAction.substeps.find(({ key }) => key === 'chooseTrigger')
-              .arguments
-          );
-
-          const toolInstance = tool(
-            async (input) => {
-              const $ = await globalVariable({
-                app,
-                connection: await Connection.query().findById(
-                  agentTool.connectionId
-                ),
-                testRun: false,
-                step: {
-                  parameters: input,
-                },
-              });
-
-              console.log(
-                `Running tool: ${appKey}.${toolName} with input:`,
-                input
-              );
-
-              try {
-                await appAction.run($);
-                const actionOutput = $.actionOutput.data;
-
-                return JSON.stringify(actionOutput.raw);
-              } catch (error) {
-                console.log(`Error running tool ${appKey}.${toolName}:`, error);
-                return '';
-              }
-            },
-            {
-              name: toolName,
-              description: appAction.description,
-              schema: toolSchema,
-            }
-          );
-
-          tools.push(toolInstance);
-        }
-      }
+    if (agentTool.type !== 'app') {
+      continue;
     }
-    // TODO: cover flow agent tools
+
+    const { appKey, actions } = agentTool;
+    const app = await App.findOneByKey(appKey);
+    const appActions = app.actions || [];
+
+    for (const actionKey of actions || []) {
+      const appAction = appActions.find(({ key }) => key === actionKey);
+
+      if (!appAction) continue;
+
+      const toolName = `${appKey}_${appAction.key}`;
+      const chooseTriggerStep = (appAction.substeps || []).find(
+        ({ key }) => key === 'chooseTrigger'
+      );
+      const toolSchema = schemaFromActionArguments(
+        chooseTriggerStep?.arguments || appAction.arguments || []
+      );
+
+      const toolInstance = tool(
+        async (input) => {
+          const $ = await globalVariable({
+            app,
+            connection: await Connection.query().findById(
+              agentTool.connectionId
+            ),
+            testRun: false,
+            step: {
+              parameters: input,
+            },
+          });
+
+          try {
+            await appAction.run($);
+            return JSON.stringify($.actionOutput.data?.raw ?? {});
+          } catch (error) {
+            return error.message || '';
+          }
+        },
+        {
+          name: toolName,
+          description: appAction.description || toolName,
+          schema: toolSchema,
+        }
+      );
+
+      tools.push(toolInstance);
+    }
   }
 
   return tools;
 }
 
 export default async function runAgent(agent, { prompt, messages }) {
-  // Validate input - must have either prompt or messages
   if (!prompt && !messages) {
     throw new Error('Either prompt or messages must be provided');
   }
 
   const { provider, key } = await Config.getDefaultAiProviderWithKey();
 
+  if (!provider || !key) {
+    throw new Error('Default AI provider is not configured');
+  }
+
   const ProviderClass = providers[provider];
-  const providerApiKey = key;
-  const defaultModel = defaultModels[provider];
+
+  if (!ProviderClass) {
+    throw new Error(`Unsupported AI provider: ${provider}`);
+  }
 
   const agentTools = await getAgentTools(agent.id);
   const tools = await generateTools(agentTools);
 
   const llm = new ProviderClass({
-    model: defaultModel,
-    apiKey: providerApiKey,
+    model: defaultModels[provider],
+    apiKey: key,
     temperature: 0,
   });
 
-  // Handle conversation mode with message history
   let promptTemplate;
   let invokeParams;
   let userPrompt;
 
   if (messages && messages.length > 0) {
-    // Conversation mode with history
     const chatHistory = [];
 
-    // Convert all messages except the last one to chat history
     for (const message of messages.slice(0, -1)) {
       if (message.role === 'user') {
         chatHistory.push(new HumanMessage(message.content));
@@ -132,15 +129,14 @@ export default async function runAgent(agent, { prompt, messages }) {
       }
     }
 
-    // Get the latest user message
     const latestMessage = messages[messages.length - 1];
+
     if (latestMessage.role !== 'user') {
       throw new Error('Last message must be from user');
     }
 
     userPrompt = latestMessage.content;
 
-    // Create prompt template with message history
     promptTemplate = ChatPromptTemplate.fromMessages([
       ['system', '{system_instructions}'],
       new MessagesPlaceholder('chat_history'),
@@ -154,7 +150,6 @@ export default async function runAgent(agent, { prompt, messages }) {
       chat_history: chatHistory,
     };
   } else {
-    // Simple mode with just a prompt
     userPrompt = prompt;
 
     promptTemplate = ChatPromptTemplate.fromMessages([
@@ -183,12 +178,6 @@ export default async function runAgent(agent, { prompt, messages }) {
 
   try {
     const result = await agentExecutor.invoke(invokeParams);
-
-    const executionData = {
-      output: result.output,
-      intermediateSteps: result.intermediateSteps || [],
-    };
-
     const outputText = result.output?.[0]?.text || result.output;
 
     await agent.$relatedQuery('agentExecutions').insert({
@@ -199,10 +188,11 @@ export default async function runAgent(agent, { prompt, messages }) {
       finishedAt: new Date().toISOString(),
     });
 
-    return executionData;
+    return {
+      output: result.output,
+      intermediateSteps: result.intermediateSteps || [],
+    };
   } catch (error) {
-    console.error('Agent execution error:', error);
-
     await agent.$relatedQuery('agentExecutions').insert({
       agentId: agent.id,
       prompt: userPrompt,
